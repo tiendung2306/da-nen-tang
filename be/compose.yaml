@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=ezmarket'
+      - 'POSTGRES_PASSWORD=123456'
+      - 'POSTGRES_USER=sa'
+    ports:
+      - '5432'
