@@ -1,0 +1,72 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# Flutter/Dart
+/build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+
+# IntelliJ
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Android
+/android/app/src/main/assets/flutter_assets/
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/gradle/
+/android/gradlew
+/android/gradlew.bat
+/android/local.properties
+/android/key.properties
+
+# iOS
+/ios/Pods/
+/ios/Flutter/App.framework
+/ios/Flutter/engine.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/.last_build_id
+/ios/.symlinks/
+/ios/Runner/GeneratedPluginRegistrant.h
+/ios/Runner/GeneratedPluginRegistrant.m
+/ios/Runner/Runner.xcscheme/xcshareddata/xcschemes/Runner.xcscheme
+/ios/Runner.xcworkspace/contents.xcworkspacedata
+/ios/Runner.xcworkspace/xcshareddata/
+/ios/Runner.xcodeproj/project.xcworkspace/
+/ios/Runner.xcodeproj/xcuserdata/
+
+# Windows
+/windows/flutter/ephemeral/
+/windows/flutter/generated_plugins.cmake
+/windows/runner/Debug/
+/windows/runner/Profile/
+/windows/runner/Release/
+/windows/runner/flutter_window.pdb
+/windows/runner/runner.exe.manifest
+/windows/runner/runner.pdb
+/windows/x64/
+
+# Linux
+/linux/flutter/ephemeral/
+/linux/flutter/generated_plugins.cmake
+/linux/my_application
+
+# Sentry
+/.sentry-native/
