@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_boilerplate/providers/auth_provider.dart';
+import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/routes.dart';
-import 'package:flutter_boilerplate/services/api/api_service.dart';
+import 'package:flutter_boilerplate/pages/main_page.dart'; // Import MainPage for navigation
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -12,48 +15,54 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final ApiService _apiService = ApiService();
-  final orangeColor = const Color(0xFFF26F21);
-
-  bool _isLoading = false;
+  final _formKey = GlobalKey<FormState>();
 
   Future<void> _login() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     try {
-      final response = await _apiService.login(
-        _usernameController.text,
-        _passwordController.text,
+      await authProvider.login(
+        username: _usernameController.text,
+        password: _passwordController.text,
       );
 
-      if (response.statusCode == 200) {
-        Navigator.of(context).pushReplacementNamed(Routes.profile);
-      } else {
+      // --- NAVIGATION FIX: Manually navigate after successful login ---
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đăng nhập thành công!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        // Navigate to MainPage and remove all previous routes from the stack.
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const MainPage()),
+          (Route<dynamic> route) => false, // This predicate removes all routes.
+        );
+      }
+
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response.data?['message'] ?? 'Đăng nhập thất bại'),
+            content: Text(e.toString().replaceFirst('Exception: ', '')),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final orangeColor = const Color(0xFFF26F21);
+    // The isLoading state is now correctly managed by the provider.
+    final isLoading = context.watch<AuthProvider>().viewStatus == ViewStatus.Loading;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -65,103 +74,95 @@ class _LoginPageState extends State<LoginPage> {
         ),
       ),
       body: SafeArea(
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const SizedBox(height: 20),
-              const Center(
-                child: Text(
-                  'Đi chợ thông minh',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 28,
-                    color: Color(0xFFF26F21),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 60),
-              const Text(
-                'Tài khoản',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  hintText: 'Nhập email hoặc số điện thoại',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'Mật khẩu',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Mật khẩu',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-                ),
-              ),
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Đăng nhập',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: orangeColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(28),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      // TODO: Navigate to forgot password page
-                    },
+        child: SingleChildScrollView(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                // ... (rest of the UI remains the same)
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const SizedBox(height: 20),
+                  const Center(
                     child: Text(
-                      'Quên mật khẩu?',
-                      style: TextStyle(color: orangeColor, fontSize: 16),
+                      'Đi chợ thông minh',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 28,
+                        color: Color(0xFFF26F21),
+                      ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(Routes.register);
-                    },
-                    child: Text(
-                      'Chưa có tài khoản?',
-                      style: TextStyle(color: orangeColor, fontSize: 16),
+                  const SizedBox(height: 60),
+                  const Text('Tài khoản', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _usernameController,
+                    decoration: InputDecoration(
+                      hintText: 'Nhập tài khoản',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập tài khoản';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Mật khẩu', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      hintText: 'Mật khẩu',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Vui lòng nhập mật khẩu';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 40),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _login,
+                      child: isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: orangeColor,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () { /* TODO: Navigate to forgot password */ },
+                        child: Text('Quên mật khẩu?', style: TextStyle(color: orangeColor, fontSize: 16)),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pushNamed(Routes.register),
+                        child: Text('Chưa có tài khoản?', style: TextStyle(color: orangeColor, fontSize: 16)),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const Spacer(),
-            ],
+            ),
           ),
         ),
       ),

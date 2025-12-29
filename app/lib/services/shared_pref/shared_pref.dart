@@ -1,21 +1,43 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String HAS_USED = 'has_used';
-const String AUTH_TOKEN = 'auth_token';
-const String CONFIG_LANG = 'config_lang';
+// Constants for keys
+const String _authTokenKey = 'auth_token';
+const String _userInfoKey = 'user_info';
 
-// ignore: avoid_classes_with_only_static_members
 class SharedPref {
-  // Use 'late' to indicate that this variable will be initialized before it's used.
   static late SharedPreferences _sharedPref;
 
-  static SharedPreferences get sharedPref => _sharedPref;
+  // Private constructor
+  SharedPref._();
 
   static Future<void> init() async {
     _sharedPref = await SharedPreferences.getInstance();
   }
 
   static Future<void> clear() async {
-    await _sharedPref.clear(); // Add await for the async operation
+    await _sharedPref.clear();
+  }
+
+  // --- Token Management ---
+  static Future<void> saveToken(String token) async {
+    await _sharedPref.setString(_authTokenKey, token);
+  }
+
+  static Future<String?> getToken() async {
+    return _sharedPref.getString(_authTokenKey);
+  }
+
+  // --- User Info Management ---
+  static Future<void> saveUserInfo(Map<String, dynamic> userInfo) async {
+    await _sharedPref.setString(_userInfoKey, json.encode(userInfo));
+  }
+
+  static Future<Map<String, dynamic>?> getUserInfo() async {
+    final userInfoString = _sharedPref.getString(_userInfoKey);
+    if (userInfoString != null) {
+      return json.decode(userInfoString) as Map<String, dynamic>;
+    }
+    return null;
   }
 }
