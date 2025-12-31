@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/models/family_invitation_model.dart';
 import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/services/api/api_service.dart';
@@ -22,6 +21,11 @@ class FamilyProvider extends ChangeNotifier {
   List<FamilyInvitation> get invitations => _invitations;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
 
   Future<void> fetchFamilies() async {
     _isLoading = true;
@@ -52,38 +56,34 @@ class FamilyProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      // Refetch the specific family to get all details if needed, or find from list
       _selectedFamily = _families.firstWhere((f) => f.id == familyId, orElse: () => _families.first);
       _members = await _apiService.getFamilyMembers(familyId);
     } finally {
       _isLoading = false;
-  }
-
-  /// Creates a new family and then refetches the list of families.
-  Future<bool> createFamily(Map<String, dynamic> familyData, {XFile? image}) async {
-    _errorMessage = null;
-    try {
-      final newFamily = await _apiService.createFamily(familyData, image: image);
-      _families.insert(0, newFamily);
-      _selectedFamily = newFamily;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
     }
   }
 
-  Future<void> createFamily(Map<String, dynamic> familyData) async {
-    // Assuming createFamily will be handled and then list refreshed
-    await _apiService.createFamily(familyData);
-    await fetchFamilies();
-  /// Updates a family with optional image
+  Future<bool> createFamily(Map<String, dynamic> familyData, {XFile? image}) async {
+    _setLoading(true);
+    try {
+      final family = await _apiService.createFamily(familyData);
+      // TODO: Handle image upload if API supports it in createFamily
+      _families.insert(0, family);
+      _selectedFamily = family;
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _setLoading(false);
+      return false;
+    }
+  }
+
   Future<bool> updateFamily(int familyId, Map<String, dynamic> familyData, {XFile? image}) async {
-    _errorMessage = null;
+    _setLoading(true);
     try {
       final updatedFamily = await _apiService.updateFamilyWithImage(familyId, familyData, image: image);
-      // Update in local list
       final index = _families.indexWhere((f) => f.id == familyId);
       if (index != -1) {
         _families[index] = updatedFamily;
@@ -91,69 +91,68 @@ class FamilyProvider extends ChangeNotifier {
       if (_selectedFamily?.id == familyId) {
         _selectedFamily = updatedFamily;
       }
-      notifyListeners();
+      _setLoading(false);
       return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
+      _errorMessage = e.toString();
+      _setLoading(false);
       return false;
     }
   }
 
-  Future<bool> joinFamily(String inviteCode) async {
+  Future<bool> deleteImage(int familyId) async {
+    _setLoading(true);
     try {
-      await _apiService.joinFamily(inviteCode);
-      await fetchFamilies();
+      final updatedFamily = await _apiService.deleteFamilyImage(familyId);
+      final index = _families.indexWhere((f) => f.id == familyId);
+      if (index != -1) {
+        _families[index] = updatedFamily;
+      }
+      if (_selectedFamily?.id == familyId) {
+        _selectedFamily = updatedFamily;
+      }
+       _setLoading(false);
+      return true;
+    } catch (e) {
+       _setLoading(false);
+      return false;
+    }
+  }
+
+
+  Future<bool> joinFamily(String inviteCode) async {
+    _setLoading(true);
+    try {
+      final family = await _apiService.joinFamily(inviteCode);
+      if (!_families.any((f) => f.id == family.id)) {
+        _families.add(family);
+      }
+      _selectedFamily = family;
+      _setLoading(false);
       return true;
     } catch (e) {
       _errorMessage = e.toString();
-      notifyListeners();
+      _setLoading(false);
       return false;
     }
   }
 
   Future<bool> leaveFamily(int familyId) async {
+    _setLoading(true);
     try {
       await _apiService.leaveFamily(familyId);
       _families.removeWhere((f) => f.id == familyId);
       if (_selectedFamily?.id == familyId) {
         _selectedFamily = _families.isNotEmpty ? _families.first : null;
       }
-      notifyListeners();
+      _setLoading(false);
       return true;
     } catch (e) {
+      _setLoading(false);
       return false;
     }
   }
 
-  /// Deletes the family image
-  Future<bool> deleteImage(int familyId) async {
-    _errorMessage = null;
-    try {
-      final updatedFamily = await _apiService.deleteFamilyImage(familyId);
-      // Update in local list
-      final index = _families.indexWhere((f) => f.id == familyId);
-      if (index != -1) {
-        _families[index] = updatedFamily;
-      }
-      if (_selectedFamily?.id == familyId) {
-        _selectedFamily = updatedFamily;
-      }
-      notifyListeners();
-      return true;
-    } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
-      return false;
-    }
-  }
-
-  void clearError() {
-    _errorMessage = null;
-    notifyListeners();
-  }
-
-  // --- Family Invitations ---
   Future<void> fetchInvitations() async {
     try {
       _invitations = await _apiService.getFamilyInvitations();

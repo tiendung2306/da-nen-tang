@@ -5,134 +5,107 @@ import 'package:flutter_boilerplate/services/api/api_service.dart';
 import 'package:flutter_boilerplate/services/locator.dart';
 import 'package:flutter_boilerplate/services/shared_pref/shared_pref.dart';
 
-// RE-ARCHITECTED: Inherit directly from ChangeNotifier to isolate the issue.
 class AuthProvider extends ChangeNotifier {
   final ApiService _apiService = locator<ApiService>();
 
   UserInfo? _userInfo;
-  String? _token;
-  bool _isLoading = false; // Manage loading state locally.
+  bool _isLoggedIn = false;
+  String? _errorMessage;
+  bool _isLoading = false;
 
   UserInfo? get userInfo => _userInfo;
-  String? get token => _token;
+  bool get isLoggedIn => _isLoggedIn;
+  String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
-  bool get isLoggedIn => _token != null && _userInfo != null;
 
-  Future<void> loadUser() async {
-    final storedToken = await SharedPref.getToken();
-    final storedUserInfo = await SharedPref.getUserInfo();
-    if (storedToken != null && storedUserInfo != null) {
-      _token = storedToken;
-      _userInfo = UserInfo.fromJson(storedUserInfo);
-      notifyListeners();
-    }
+  AuthProvider() {
+    loadUser();
   }
 
-  Future<void> register({
-    required String fullName,
-    required String username,
-    required String email,
-    required String password,
-  }) async {
+  Future<void> loadUser() async {
     _isLoading = true;
     notifyListeners();
 
-    try {
-      await _apiService.register(
-        fullName: fullName,
-        username: username,
-        email: email,
-        password: password,
-      );
-      _isLoading = false;
-      notifyListeners();
-    } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
+    final token = await SharedPref.getToken();
+    if (token != null) {
+      try {
+        _userInfo = await _apiService.getCurrentUser();
+        _isLoggedIn = true;
+      } catch (e) {
+        // If token is invalid, logout
+        await logout();
+      }
+    } else {
+      _isLoggedIn = false;
+      _userInfo = null;
     }
+    
+    _isLoading = false;
+    notifyListeners();
   }
 
-  Future<void> login({required String username, required String password, String? deviceToken}) async {
+  Future<bool> login(String username, String password) async {
     _isLoading = true;
-    notifyListeners(); // Notify UI that loading has started.
+    _errorMessage = null;
+    notifyListeners();
 
     try {
-      final loginData = await _apiService.login(
-        username: username,
-        password: password,
-        deviceToken: deviceToken,
-      );
-
-      // Set the state that determines login status.
-      _token = loginData.token;
-      _userInfo = loginData.userInfo;
+      final loginData = await _apiService.login(username: username, password: password);
+      await SharedPref.setToken(loginData.accessToken);
       
-      // Persist the session.
-      await SharedPref.saveToken(loginData.token);
-      await SharedPref.saveUserInfo(loginData.userInfo.toJson());
-
-      _isLoading = false;
-      // The crucial notification that will trigger navigation in main.dart.
-      notifyListeners(); 
-
+      // After setting token, let loadUser handle the state update and UI notification
+      await loadUser(); 
+      
+      return _isLoggedIn; 
     } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _isLoggedIn = false;
       _isLoading = false;
-      notifyListeners(); // Notify UI that loading is over.
-      rethrow; // Re-throw the error to be displayed on the login page.
+      notifyListeners();
+      return false;
     }
   }
 
   Future<void> logout() async {
-    _token = null;
+    await SharedPref.removeToken();
+    _isLoggedIn = false;
     _userInfo = null;
-    _isLoading = false;
-    await SharedPref.clear();
     notifyListeners();
   }
 
-  Future<void> uploadAvatar(XFile image) async {
+  Future<bool> register(Map<String, dynamic> data) async {
     _isLoading = true;
     notifyListeners();
+    try {
+      await _apiService.register(data);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
 
+  Future<void> uploadAvatar(XFile image) async {
     try {
       final updatedUser = await _apiService.uploadUserAvatar(image);
       _userInfo = updatedUser;
-      await SharedPref.saveUserInfo(updatedUser.toJson());
-      _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
+      // handle error
     }
   }
 
   Future<void> deleteAvatar() async {
-    _isLoading = true;
-    notifyListeners();
-
     try {
       final updatedUser = await _apiService.deleteUserAvatar();
       _userInfo = updatedUser;
-      await SharedPref.saveUserInfo(updatedUser.toJson());
-      _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _isLoading = false;
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> refreshUserInfo() async {
-    try {
-      final user = await _apiService.getCurrentUser();
-      _userInfo = user;
-      await SharedPref.saveUserInfo(user.toJson());
-      notifyListeners();
-    } catch (e) {
-      // Silent fail - user info refresh is not critical
+      // handle error
     }
   }
 }
