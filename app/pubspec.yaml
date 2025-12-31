@@ -29,6 +29,7 @@ dependencies:
   json_annotation: ^4.9.0
   flutter_svg: ^2.0.10
   intl: ^0.20.0
+  timeago: ^3.6.1
   expandable: ^5.0.1
   get_it: ^7.7.0
   firebase_analytics: ^10.10.4

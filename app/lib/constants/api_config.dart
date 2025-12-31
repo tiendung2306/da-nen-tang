@@ -36,11 +36,15 @@ class ApiConfig {
   // --- Family Endpoints ---
   static const String families = '/families';
   static const String joinFamily = '/families/join';
+  static const String familyInvitations = '/families/invitations';
+  static String respondToFamilyInvitation(int id) => '/families/invitations/$id/respond';
   static String familyById(int id) => '/families/$id';
   static String familyMembers(int id) => '/families/$id/members';
   static String leaveFamily(int id) => '/families/$id/leave';
+  static String familyInviteCode(int id) => '/families/$id/invite-code';
   static String regenerateInviteCode(int id) => '/families/$id/regenerate-invite-code';
   static String familyMember(int familyId, int userId) => '/families/$familyId/members/$userId';
+  static String inviteFriendToFamily(int familyId) => '/families/$familyId/invite';
 
   // --- Fridge Endpoints ---
   static const String fridgeItems = '/fridge-items';
@@ -59,4 +63,22 @@ class ApiConfig {
   static const String searchRecipes = '/recipes/search'; // query param: title
   static const String myRecipes = '/recipes/my-recipes';
   static String recipeSuggestions(int familyId) => '/recipes/suggestions/$familyId';
+
+  // --- Shopping List Endpoints ---
+  static const String shoppingLists = '/shopping-lists';
+  static String shoppingListById(int id) => '/shopping-lists/$id';
+  static String familyShoppingLists(int familyId) => '/families/$familyId/shopping-lists';
+  static String familyActiveShoppingLists(int familyId) => '/families/$familyId/shopping-lists/active';
+  static String shoppingListItems(int listId) => '/shopping-lists/$listId/items';
+  static String shoppingListItemsBulk(int listId) => '/shopping-lists/$listId/items/bulk';
+  static String shoppingItemById(int itemId) => '/shopping-items/$itemId';
+
+  // --- Meal Plan Endpoints ---
+  static const String mealPlans = '/meal-plans';
+  static String mealPlanById(int id) => '/meal-plans/$id';
+  static String familyMealPlans(int familyId) => '/families/$familyId/meal-plans';
+  static String familyDailyMealPlans(int familyId) => '/families/$familyId/meal-plans/daily';
+  static String familyWeeklyMealPlans(int familyId) => '/families/$familyId/meal-plans/weekly';
+  static String mealPlanItems(int mealPlanId) => '/meal-plans/$mealPlanId/items';
+  static String mealItemById(int itemId) => '/meal-items/$itemId';
 }

@@ -2,9 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter_boilerplate/constants/api_config.dart';
 import 'package:flutter_boilerplate/models/auth_model.dart';
 import 'package:flutter_boilerplate/models/family_model.dart';
+import 'package:flutter_boilerplate/models/family_invitation_model.dart';
 import 'package:flutter_boilerplate/models/friend_model.dart';
 import 'package:flutter_boilerplate/models/fridge_item.dart';
 import 'package:flutter_boilerplate/models/recipe_model.dart';
+import 'package:flutter_boilerplate/models/shopping_list_model.dart';
+import 'package:flutter_boilerplate/models/meal_plan_model.dart';
 import 'package:flutter_boilerplate/services/shared_pref/shared_pref.dart';
 
 class ApiService {
@@ -58,21 +61,27 @@ class ApiService {
   Future<List<UserInfo>> getFriends() async {
     try {
       final response = await _dio.get(ApiConfig.friends);
-      return (response.data['data'] as List).map((i) => UserInfo.fromJson(i)).toList();
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => UserInfo.fromJson(i)).toList();
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
   Future<List<FriendRequest>> getReceivedFriendRequests() async {
     try {
       final response = await _dio.get(ApiConfig.receivedFriendRequests);
-      return (response.data['data'] as List).map((i) => FriendRequest.fromJson(i)).toList();
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => FriendRequest.fromJson(i)).toList();
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
   Future<List<FriendRequest>> getSentFriendRequests() async {
     try {
       final response = await _dio.get(ApiConfig.sentFriendRequests);
-      return (response.data['data'] as List).map((i) => FriendRequest.fromJson(i)).toList();
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => FriendRequest.fromJson(i)).toList();
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
@@ -84,7 +93,7 @@ class ApiService {
 
   Future<void> respondToFriendRequest({required String requestId, required bool accept}) async {
     try {
-      await _dio.post(ApiConfig.respondToFriendRequest(requestId), data: {'response': accept ? 'accept' : 'decline'});
+      await _dio.post(ApiConfig.respondToFriendRequest(requestId), data: {'accept': accept});
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
@@ -111,14 +120,95 @@ class ApiService {
   Future<List<Family>> getFamilies() async {
     try {
       final response = await _dio.get(ApiConfig.families);
-      return (response.data['data'] as List).map((i) => Family.fromJson(i)).toList();
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => Family.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<Family> getFamilyById(int id) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyById(id));
+      return Family.fromJson(response.data['data']);
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
   Future<Family> createFamily(Map<String, dynamic> data) async {
     try {
-      final response = await _dio.post(ApiConfig.families, data: data);
+      final formData = FormData.fromMap({
+        'name': data['name'],
+        if (data['description'] != null) 'description': data['description'],
+        if (data['friendIds'] != null && (data['friendIds'] as List).isNotEmpty)
+          'friendIds': (data['friendIds'] as List).map((id) => id.toString()).toList(),
+      });
+      final response = await _dio.post(
+        ApiConfig.families,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
       return Family.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<Family> updateFamily(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put(ApiConfig.familyById(id), data: data);
+      return Family.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteFamily(int id) async {
+    try {
+      await _dio.delete(ApiConfig.familyById(id));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<List<FamilyMember>> getFamilyMembers(int familyId) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyMembers(familyId));
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => FamilyMember.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<Family> joinFamily(String inviteCode) async {
+    try {
+      final response = await _dio.post(ApiConfig.joinFamily, data: {'inviteCode': inviteCode});
+      return Family.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> leaveFamily(int familyId) async {
+    try {
+      await _dio.delete(ApiConfig.leaveFamily(familyId));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<String> generateInviteCode(int familyId) async {
+    try {
+      final response = await _dio.post(ApiConfig.familyInviteCode(familyId));
+      return response.data['data']['inviteCode'] ?? '';
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  // --- Family Invitation APIs ---
+  Future<List<FamilyInvitation>> getFamilyInvitations() async {
+    try {
+      final response = await _dio.get(ApiConfig.familyInvitations);
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => FamilyInvitation.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<FamilyInvitation> respondToFamilyInvitation(int invitationId, bool accept) async {
+    try {
+      final response = await _dio.post(
+        ApiConfig.respondToFamilyInvitation(invitationId),
+        data: {'accept': accept},
+      );
+      return FamilyInvitation.fromJson(response.data['data']);
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
@@ -126,7 +216,9 @@ class ApiService {
   Future<List<FridgeItem>> getFridgeItems(int familyId) async {
     try {
       final response = await _dio.get(ApiConfig.familyFridgeItems(familyId));
-      return (response.data['data'] as List).map((i) => FridgeItem.fromJson(i)).toList();
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => FridgeItem.fromJson(i)).toList();
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 
@@ -190,6 +282,152 @@ class ApiService {
   Future<void> deleteRecipe(int id) async {
     try {
       await _dio.delete(ApiConfig.recipeById(id));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  // --- Shopping List APIs ---
+  Future<List<ShoppingList>> getShoppingLists(int familyId) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyShoppingLists(familyId));
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => ShoppingList.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<List<ShoppingList>> getActiveShoppingLists(int familyId) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyActiveShoppingLists(familyId));
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => ShoppingList.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<ShoppingList> getShoppingListById(int id) async {
+    try {
+      final response = await _dio.get(ApiConfig.shoppingListById(id));
+      return ShoppingList.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<ShoppingList> createShoppingList(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post(ApiConfig.shoppingLists, data: data);
+      return ShoppingList.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<ShoppingList> updateShoppingList(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.patch(ApiConfig.shoppingListById(id), data: data);
+      return ShoppingList.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteShoppingList(int id) async {
+    try {
+      await _dio.delete(ApiConfig.shoppingListById(id));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<ShoppingItem> addShoppingItem(int listId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post(ApiConfig.shoppingListItems(listId), data: data);
+      return ShoppingItem.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<List<ShoppingItem>> addShoppingItemsBulk(int listId, List<Map<String, dynamic>> items) async {
+    try {
+      final response = await _dio.post(ApiConfig.shoppingListItemsBulk(listId), data: {'items': items});
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => ShoppingItem.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<ShoppingItem> updateShoppingItem(int itemId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.patch(ApiConfig.shoppingItemById(itemId), data: data);
+      return ShoppingItem.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteShoppingItem(int itemId) async {
+    try {
+      await _dio.delete(ApiConfig.shoppingItemById(itemId));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  // --- Meal Plan APIs ---
+  Future<List<MealPlan>> getMealPlans(int familyId, {String? startDate, String? endDate}) async {
+    try {
+      final queryParams = <String, dynamic>{};
+      if (startDate != null) queryParams['startDate'] = startDate;
+      if (endDate != null) queryParams['endDate'] = endDate;
+      final response = await _dio.get(ApiConfig.familyMealPlans(familyId), queryParameters: queryParams);
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => MealPlan.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<List<MealPlan>> getDailyMealPlans(int familyId, String date) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyDailyMealPlans(familyId), queryParameters: {'date': date});
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => MealPlan.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<List<MealPlan>> getWeeklyMealPlans(int familyId, String startDate) async {
+    try {
+      final response = await _dio.get(ApiConfig.familyWeeklyMealPlans(familyId), queryParameters: {'startDate': startDate});
+      final data = response.data['data'];
+      if (data == null) return [];
+      return (data as List).map((i) => MealPlan.fromJson(i)).toList();
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<MealPlan> getMealPlanById(int id) async {
+    try {
+      final response = await _dio.get(ApiConfig.mealPlanById(id));
+      return MealPlan.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<MealPlan> createMealPlan(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post(ApiConfig.mealPlans, data: data);
+      return MealPlan.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<MealPlan> updateMealPlan(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.put(ApiConfig.mealPlanById(id), data: data);
+      return MealPlan.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteMealPlan(int id) async {
+    try {
+      await _dio.delete(ApiConfig.mealPlanById(id));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<MealItem> addMealItem(int mealPlanId, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post(ApiConfig.mealPlanItems(mealPlanId), data: data);
+      return MealItem.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteMealItem(int itemId) async {
+    try {
+      await _dio.delete(ApiConfig.mealItemById(itemId));
     } on DioException catch (e) { throw _handleDioError(e); }
   }
 }

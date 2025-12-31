@@ -37,7 +37,7 @@ class _CreateFamilyPageState extends State<CreateFamilyPage> {
 
       final familyData = {
         'name': _nameController.text,
-        'memberIds': _selectedMembers.map((member) => member.id).toList(),
+        'friendIds': _selectedMembers.map((member) => member.id).toList(),
       };
 
       try {
