@@ -77,15 +77,44 @@ class NotificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> markAsUnread(List<String> ids) async {
-    await _apiService.markNotificationsAsUnread(ids);
-    _notifications.where((n) => ids.contains(n.id.toString())).forEach((n) {
-      final index = _notifications.indexOf(n);
-      _notifications[index] = n.copyWith(read: false);
-    });
-    fetchCount();
-    notifyListeners();
+  // markAsUnread is not supported by current API
+  // Comment this method if needed in future
+  /*
+  Future<void> markAsUnread(List<int> ids) async {
+    try {
+      await _apiService.markNotificationsAsUnread(ids);
+      
+      // Update local state
+      for (var i = 0; i < _notifications.length; i++) {
+        if (ids.contains(_notifications[i].id)) {
+          _notifications[i] = NotificationItem(
+            id: _notifications[i].id,
+            title: _notifications[i].title,
+            message: _notifications[i].message,
+            type: _notifications[i].type,
+            referenceType: _notifications[i].referenceType,
+            referenceId: _notifications[i].referenceId,
+            isRead: false,
+            createdAt: _notifications[i].createdAt,
+            readAt: null,
+          );
+        }
+      }
+      
+      // Update count
+      _count = NotificationCount(
+        total: _count.total,
+        unread: _count.unread + ids.length,
+      );
+      
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
+  */
 
   Future<void> markAllAsRead() async {
     await _apiService.markAllNotificationsAsRead();
@@ -102,9 +131,19 @@ class NotificationProvider extends ChangeNotifier {
   }
 
   Future<void> deleteAllNotifications() async {
-    await _apiService.deleteAllNotifications();
-    _notifications.clear();
-    fetchCount();
-    notifyListeners();
+    try {
+      // Delete all notifications one by one since bulk delete API not available
+      final ids = _notifications.map((n) => n.id).toList();
+      for (final id in ids) {
+        await _apiService.deleteNotification(id);
+      }
+      _notifications = [];
+      _count = NotificationCount(total: 0, unread: 0);
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 }

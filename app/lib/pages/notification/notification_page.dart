@@ -81,8 +81,31 @@ class _NotificationPageState extends State<NotificationPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(provider.error!),
-            ElevatedButton(onPressed: () => provider.refresh(), child: const Text('Thử lại')),
+            if (!notification.isRead)
+              ListTile(
+                leading: const Icon(
+                  Icons.mark_email_read,
+                  color: Color(0xFFF26F21),
+                ),
+                title: const Text('Đánh dấu đã đọc'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<NotificationProvider>().markAsRead([notification.id]);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Xóa thông báo', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _deleteNotification(notification);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('Hủy'),
+              onTap: () => Navigator.pop(ctx),
+            ),
           ],
         ),
       );
