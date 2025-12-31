@@ -73,7 +73,7 @@ class ApiService {
 
   Future<UserInfo> getCurrentUser() async {
     try {
-      final response = await _dio.get(ApiConfig.me);
+      final response = await _dio.get(ApiConfig.currentUser);
       return UserInfo.fromJson(response.data['data']);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -82,15 +82,10 @@ class ApiService {
 
   Future<UserInfo> uploadUserAvatar(XFile image) async {
     try {
-      final bytes = await image.readAsBytes();
       final formData = FormData.fromMap({
         'file': MultipartFile.fromBytes(bytes, filename: image.name),
       });
-      final response = await _dio.post(
-        ApiConfig.userAvatar,
-        data: formData,
-        options: Options(contentType: 'multipart/form-data'),
-      );
+      final response = await _dio.post(ApiConfig.userAvatar, data: formData);
       return UserInfo.fromJson(response.data['data']);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -215,7 +210,7 @@ class ApiService {
     }
   }
 
-  Future<Family> createFamily(Map<String, dynamic> data, {XFile? image}) async {
+  Future<Family> createFamily(Map<String, dynamic> data) async {
     try {
       final Map<String, dynamic> formMap = {
         'name': data['name'],
@@ -319,7 +314,7 @@ class ApiService {
     }
   }
 
-  Future<String> generateInviteCode(int familyId) async {
+  Future<void> respondToFamilyInvitation(int invitationId, bool accept) async {
     try {
       final response = await _dio.get(ApiConfig.familyById(familyId));
       return response.data['data']['inviteCode'] ?? '';
@@ -328,7 +323,7 @@ class ApiService {
     }
   }
 
-  Future<String> regenerateInviteCode(int familyId) async {
+  Future<String> generateInviteCode(int familyId) async {
     try {
       final response = await _dio.post(ApiConfig.regenerateInviteCode(familyId));
       return response.data['data']['inviteCode'] ?? '';
@@ -357,7 +352,7 @@ class ApiService {
     }
   }
 
-  Future<void> respondToFamilyInvitation(int invitationId, bool accept) async {
+  Future<void> inviteFriendToFamily(int familyId, int friendId) async {
     try {
       await _dio.post(ApiConfig.respondToFamilyInvitation(invitationId), data: {'accept': accept});
     } on DioException catch (e) {
@@ -690,5 +685,50 @@ class ApiService {
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
+  }
+
+  // --- Notification APIs ---
+  Future<PaginatedResponse<AppNotification>> getNotifications({int page = 0, int size = 20, bool? unreadOnly}) async {
+    try {
+      final response = await _dio.get(ApiConfig.notifications, queryParameters: {'page': page, 'size': size, if (unreadOnly != null) 'unreadOnly': unreadOnly});
+      return PaginatedResponse<AppNotification>.fromJson(response.data['data'], (json) => AppNotification.fromJson(json as Map<String, dynamic>));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<NotificationCount> getNotificationCount() async {
+    try {
+      final response = await _dio.get(ApiConfig.notificationCount);
+      return NotificationCount.fromJson(response.data['data']);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> markNotificationsAsRead(List<String> ids) async {
+    try {
+      await _dio.post(ApiConfig.markAsRead, data: {'notificationIds': ids});
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> markNotificationsAsUnread(List<String> ids) async {
+    try {
+      await _dio.post(ApiConfig.markAsUnread, data: {'notificationIds': ids});
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      await _dio.post(ApiConfig.markAllAsRead);
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteNotification(String id) async {
+    try {
+      await _dio.delete(ApiConfig.deleteNotification(id));
+    } on DioException catch (e) { throw _handleDioError(e); }
+  }
+
+  Future<void> deleteAllNotifications() async {
+    try {
+      await _dio.delete(ApiConfig.deleteAllNotifications);
+    } on DioException catch (e) { throw _handleDioError(e); }
   }
 }

@@ -138,6 +138,7 @@ src/main/kotlin/com/smartgrocery/
 │   ├── OpenApiConfig.kt
 │   └── SecurityConfig.kt
 ├── controller/                      # REST Controllers
+│   ├── AdminController.kt           # 🆕 Quản trị hệ thống
 │   ├── AuthController.kt
 │   ├── CategoryController.kt
 │   ├── FamilyController.kt
@@ -150,6 +151,7 @@ src/main/kotlin/com/smartgrocery/
 │   ├── ShoppingListController.kt
 │   └── UserController.kt            # 🆕 Tìm kiếm user
 ├── dto/                             # Data Transfer Objects
+│   ├── admin/                       # 🆕 DTOs cho quản trị
 │   ├── auth/
 │   ├── category/
 │   ├── common/
@@ -191,6 +193,7 @@ src/main/kotlin/com/smartgrocery/
 │   ├── JwtAuthenticationFilter.kt
 │   └── JwtTokenProvider.kt
 └── service/                         # Logic nghiệp vụ
+    ├── AdminService.kt              # 🆕 Quản trị hệ thống
     ├── AuthService.kt
     ├── CategoryService.kt
     ├── FamilyService.kt
@@ -314,6 +317,7 @@ Tất cả API trả về JSON theo định dạng thống nhất:
 | **2000+** | **Lỗi liên quan bạn bè** |
 | **2100+** | **Lỗi liên quan lời mời gia đình** |
 | **2200+** | **Lỗi liên quan file upload** |
+| **2300+** | **Lỗi liên quan quản trị (Admin)** 🆕 |
 | 5000 | Lỗi máy chủ nội bộ |
 
 ## 📖 Hướng Dẫn Chi Tiết Cho Frontend
@@ -659,7 +663,182 @@ curl -X PUT 'http://localhost:8080/api/v1/families/1' \
 
 ---
 
-### 8. Error Codes Mới
+### 8. Quản Trị Hệ Thống (Admin Only) 🆕
+
+Tất cả API admin yêu cầu user có role `ADMIN`.
+
+#### 8.1. Lấy Danh Sách Users
+
+**Endpoint:** `GET /api/v1/admin/users?page=0&size=20`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/admin/users?page=0&size=20' \
+  -H 'Authorization: Bearer <admin_token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "username": "admin",
+        "email": "admin@smartgrocery.com",
+        "fullName": "System Admin",
+        "avatarUrl": null,
+        "isActive": true,
+        "roles": ["ADMIN", "USER"],
+        "createdAt": "2025-01-01T00:00:00Z",
+        "updatedAt": "2025-01-01T00:00:00Z"
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 11,
+    "totalPages": 1
+  }
+}
+```
+
+#### 8.2. Lấy Chi Tiết User
+
+**Endpoint:** `GET /api/v1/admin/users/{id}`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/admin/users/2' \
+  -H 'Authorization: Bearer <admin_token>'
+```
+
+#### 8.3. Tạo User Mới
+
+**Endpoint:** `POST /api/v1/admin/users`
+
+```bash
+curl -X POST 'http://localhost:8080/api/v1/admin/users' \
+  -H 'Authorization: Bearer <admin_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username": "newuser",
+    "email": "newuser@gmail.com",
+    "password": "123456",
+    "fullName": "New User",
+    "roleNames": ["USER"]
+  }'
+```
+
+#### 8.4. Kích Hoạt / Vô Hiệu Hóa User
+
+**Endpoint:** `PATCH /api/v1/admin/users/{id}/status`
+
+```bash
+# Vô hiệu hóa user
+curl -X PATCH 'http://localhost:8080/api/v1/admin/users/2/status' \
+  -H 'Authorization: Bearer <admin_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"isActive": false}'
+
+# Kích hoạt lại user
+curl -X PATCH 'http://localhost:8080/api/v1/admin/users/2/status' \
+  -H 'Authorization: Bearer <admin_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"isActive": true}'
+```
+
+**Lưu ý:** Admin không thể vô hiệu hóa chính mình.
+
+#### 8.5. Thay Đổi Role User
+
+**Endpoint:** `PATCH /api/v1/admin/users/{id}/roles`
+
+```bash
+# Thêm quyền ADMIN cho user
+curl -X PATCH 'http://localhost:8080/api/v1/admin/users/2/roles' \
+  -H 'Authorization: Bearer <admin_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"roleNames": ["USER", "ADMIN"]}'
+
+# Bỏ quyền ADMIN, chỉ giữ USER
+curl -X PATCH 'http://localhost:8080/api/v1/admin/users/2/roles' \
+  -H 'Authorization: Bearer <admin_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"roleNames": ["USER"]}'
+```
+
+**Lưu ý:** Admin không thể xóa quyền ADMIN của chính mình.
+
+#### 8.6. Reset Password User
+
+**Endpoint:** `POST /api/v1/admin/users/{id}/reset-password`
+
+```bash
+curl -X POST 'http://localhost:8080/api/v1/admin/users/2/reset-password' \
+  -H 'Authorization: Bearer <admin_token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"newPassword": "newpassword123"}'
+```
+
+#### 8.7. Xóa User
+
+**Endpoint:** `DELETE /api/v1/admin/users/{id}`
+
+```bash
+curl -X DELETE 'http://localhost:8080/api/v1/admin/users/2' \
+  -H 'Authorization: Bearer <admin_token>'
+```
+
+**Lưu ý:**
+- Admin không thể xóa chính mình
+- Không thể xóa admin cuối cùng trong hệ thống
+
+#### 8.8. Lấy Thống Kê Hệ Thống
+
+**Endpoint:** `GET /api/v1/admin/stats`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/admin/stats' \
+  -H 'Authorization: Bearer <admin_token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "data": {
+    "totalUsers": 11,
+    "activeUsers": 11,
+    "inactiveUsers": 0,
+    "totalCategories": 10,
+    "totalProducts": 50,
+    "totalFamilies": 5
+  }
+}
+```
+
+#### 8.9. Lấy Danh Sách Roles
+
+**Endpoint:** `GET /api/v1/admin/roles`
+
+```bash
+curl -X GET 'http://localhost:8080/api/v1/admin/roles' \
+  -H 'Authorization: Bearer <admin_token>'
+```
+
+**Response:**
+```json
+{
+  "code": 1000,
+  "data": [
+    {"id": 1, "name": "ADMIN", "description": "System administrator with full access"},
+    {"id": 2, "name": "USER", "description": "Regular user with standard access"}
+  ]
+}
+```
+
+---
+
+### 9. Error Codes Mới
 
 | Code | Message | Mô tả |
 |------|---------|-------|
@@ -679,6 +858,13 @@ curl -X PUT 'http://localhost:8080/api/v1/families/1' \
 | 2201 | File upload failed | Upload file thất bại |
 | 2202 | Invalid file type | Loại file không hợp lệ |
 | 2203 | File too large | File quá lớn |
+| 2300 | Cannot modify self | Không thể sửa tài khoản của chính mình |
+| 2301 | Cannot deactivate self | Không thể vô hiệu hóa tài khoản của chính mình |
+| 2302 | Cannot delete self | Không thể xóa tài khoản của chính mình |
+| 2303 | Cannot remove own admin | Không thể xóa quyền ADMIN của chính mình |
+| 2304 | Role not found | Không tìm thấy role |
+| 2305 | Must have at least one role | User phải có ít nhất một role |
+| 2306 | Cannot delete last admin | Không thể xóa admin cuối cùng |
 
 ## 🗄 Sơ Đồ Database
 
@@ -744,8 +930,9 @@ Tất cả các endpoint khác đều yêu cầu xác thực.
 
 ### API Chỉ Dành Cho Admin
 
-- `POST/PUT/DELETE /api/v1/categories/**`
-- `POST/PUT/DELETE /api/v1/master-products/**`
+- `/api/v1/admin/**` - Quản lý users, thống kê hệ thống 🆕
+- `POST/PUT/DELETE /api/v1/categories/**` - Quản lý danh mục
+- `POST/PUT/DELETE /api/v1/master-products/**` - Quản lý sản phẩm
 
 ## ⚠️ Xử Lý Lỗi
 
@@ -856,6 +1043,21 @@ fun updateExpiredItemsStatus() {
 | Phương thức | Endpoint | Mô tả |
 |--------|----------|-------------|
 | GET | `/files/{path}` | Lấy file (public, không cần auth) |
+
+### Quản Trị Viên (Admin Only) 🆕
+| Phương thức | Endpoint | Mô tả |
+|--------|----------|-------------|
+| GET | `/api/v1/admin/users` | Lấy danh sách users |
+| GET | `/api/v1/admin/users/{id}` | Lấy chi tiết user |
+| GET | `/api/v1/admin/users/search?keyword=` | Tìm kiếm user |
+| POST | `/api/v1/admin/users` | Tạo user mới |
+| PUT | `/api/v1/admin/users/{id}` | Cập nhật thông tin user |
+| PATCH | `/api/v1/admin/users/{id}/status` | Kích hoạt/vô hiệu hóa user |
+| PATCH | `/api/v1/admin/users/{id}/roles` | Thay đổi roles |
+| POST | `/api/v1/admin/users/{id}/reset-password` | Reset password |
+| DELETE | `/api/v1/admin/users/{id}` | Xóa user |
+| GET | `/api/v1/admin/stats` | Lấy thống kê hệ thống |
+| GET | `/api/v1/admin/roles` | Lấy danh sách roles |
 
 ### Danh Sách Mua Sắm
 | Phương thức | Endpoint | Mô tả |

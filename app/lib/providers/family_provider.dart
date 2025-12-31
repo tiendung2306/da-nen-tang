@@ -1,5 +1,4 @@
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/models/family_invitation_model.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/services/api/api_service.dart';
@@ -19,6 +18,11 @@ class FamilyProvider extends BaseProvider {
   List<FamilyMember> get members => _members;
   List<FamilyInvitation> get invitations => _invitations;
   String? get errorMessage => _errorMessage;
+
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
 
   Future<void> fetchFamilies() async {
     setStatus(ViewStatus.Loading);
@@ -113,10 +117,9 @@ class FamilyProvider extends BaseProvider {
   Future<bool> leaveFamily(int familyId) async {
     setStatus(ViewStatus.Loading);
     try {
-      await _apiService.leaveFamily(familyId);
-      _families.removeWhere((f) => f.id == familyId);
-      if (_selectedFamily?.id == familyId) {
-        _selectedFamily = _families.isNotEmpty ? _families.first : null;
+      final family = await _apiService.joinFamily(inviteCode);
+      if (!_families.any((f) => f.id == family.id)) {
+        _families.add(family);
       }
       setStatus(ViewStatus.Ready);
       return true;
@@ -136,7 +139,7 @@ class FamilyProvider extends BaseProvider {
         _families[index] = updatedFamily;
       }
       if (_selectedFamily?.id == familyId) {
-        _selectedFamily = updatedFamily;
+        _selectedFamily = _families.isNotEmpty ? _families.first : null;
       }
       setStatus(ViewStatus.Ready);
       return true;
