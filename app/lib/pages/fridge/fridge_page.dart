@@ -1,92 +1,116 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/models/fridge_item.dart';
+import 'package:flutter_boilerplate/models/family_model.dart'; // Import Family model
 import 'package:flutter_boilerplate/providers/fridge_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
-import 'package:flutter_boilerplate/pages/fridge/add_fridge_item_page.dart'; // Import the new page
+import 'package:flutter_boilerplate/providers/family_provider.dart';
+import 'package:flutter_boilerplate/pages/fridge/add_fridge_item_page.dart';
 
-class FridgePage extends StatelessWidget {
+class FridgePage extends StatefulWidget {
   const FridgePage({Key? key}) : super(key: key);
 
   @override
+  _FridgePageState createState() => _FridgePageState();
+}
+
+class _FridgePageState extends State<FridgePage> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    final fridgeProvider = context.read<FridgeProvider>();
+    final familyProvider = context.read<FamilyProvider>();
+    final selectedFamilyId = familyProvider.selectedFamily?.id;
+
+    if (selectedFamilyId != null) {
+      fridgeProvider.fetchFridgeItems(selectedFamilyId, isRefresh: true);
+    }
+
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && selectedFamilyId != null) {
+        fridgeProvider.fetchMoreItems(selectedFamilyId);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<FridgeProvider>(
-      builder: (context, provider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () {},
+    final familyProvider = Provider.of<FamilyProvider>(context);
+    final selectedFamily = familyProvider.selectedFamily;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Tủ Lạnh'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: selectedFamily == null
+              ? () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn nhóm để thêm đồ.')))
+              : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddFridgeItemPage())),
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          if (familyProvider.families.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: DropdownButtonFormField<Family>(
+                value: selectedFamily,
+                decoration: const InputDecoration(labelText: 'Chọn nhóm gia đình', border: OutlineInputBorder()),
+                items: familyProvider.families.map((Family family) {
+                  return DropdownMenuItem<Family>(value: family, child: Text(family.name));
+                }).toList(),
+                onChanged: (Family? newFamily) {
+                  if (newFamily != null) {
+                    familyProvider.setSelectedFamily(newFamily);
+                    context.read<FridgeProvider>().fetchFridgeItems(newFamily.id, isRefresh: true);
+                  }
+                },
+              ),
             ),
+          Expanded(
+            child: _buildFridgeContent(selectedFamily),
           ),
-          body: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Nhập từ khóa tìm kiếm',
-                    prefixIcon: const Icon(Icons.search),
-                    filled: true,
-                    fillColor: Colors.grey[200],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(30.0),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Danh sách thực phẩm', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        // --- CONNECT THE ADD BUTTON ---
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (context) => const AddFridgeItemPage()),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _buildContent(context, provider),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
 
-  Widget _buildContent(BuildContext context, FridgeProvider provider) {
-    if (provider.viewStatus == ViewStatus.Loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (provider.errorMessage != null) {
-      return Center(child: Text(provider.errorMessage!));
-    }
-    if (provider.items.isEmpty) {
-      return const Center(child: Text('Tủ lạnh trống!'));
-    }
-    return ListView.builder(
-      itemCount: provider.items.length,
-      itemBuilder: (context, index) {
-        return FridgeListItem(item: provider.items[index]);
+  Widget _buildFridgeContent(Family? selectedFamily) {
+    return Consumer<FridgeProvider>(
+      builder: (context, provider, child) {
+        if (selectedFamily == null) {
+          return const Center(child: Text('Vui lòng chọn một nhóm để xem tủ lạnh.'));
+        }
+        if (provider.viewStatus == ViewStatus.Loading && provider.items.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (provider.items.isEmpty) {
+          return const Center(child: Text('Tủ lạnh trống!'));
+        }
+
+        return RefreshIndicator(
+          onRefresh: () => provider.fetchFridgeItems(selectedFamily.id, isRefresh: true),
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: provider.items.length + (provider.isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == provider.items.length) {
+                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+              }
+              return FridgeListItem(item: provider.items[index]);
+            },
+          ),
+        );
       },
     );
   }
@@ -94,74 +118,27 @@ class FridgePage extends StatelessWidget {
 
 class FridgeListItem extends StatelessWidget {
   final FridgeItem item;
-
   const FridgeListItem({Key? key, required this.item}) : super(key: key);
+
+  String _buildStatusText() {
+    if (item.isExpired) return 'Đã hết hạn';
+    if (item.isExpiringSoon && item.daysUntilExpiration != null) return 'còn ${item.daysUntilExpiration} ngày';
+    return 'Còn dùng được';
+  }
 
   @override
   Widget build(BuildContext context) {
-    // ... (The rest of the FridgeListItem widget remains the same)
     return Card(
-      margin: const EdgeInsets.only(bottom: 12.0),
-      elevation: 2,
-      shadowColor: Colors.grey.withOpacity(0.2),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-        child: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                CircleAvatar(
-                  radius: 35,
-                  backgroundColor: const Color(0xFFEFEFEF),
-                  backgroundImage: item.imageUrl != null ? NetworkImage(item.imageUrl!) : null,
-                  child: item.imageUrl == null ? const Text('Ảnh', style: TextStyle(fontSize: 10, color: Colors.grey)) : null,
-                ),
-                if (item.isExpiringSoon)
-                  Positioned(
-                    top: -5,
-                    left: -5,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: const BoxDecoration(color: Colors.black, shape: BoxShape.circle),
-                      child: const Icon(Icons.priority_high, color: Colors.white, size: 16),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Text('tình trạng: ${item.status}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text('Số lượng: ${item.quantity ?? 'N/A'} ${item.unit ?? ''}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                  Text('Vị trí: ${item.location ?? 'N/A'}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
-            ),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(height: 24, child: IconButton(padding: EdgeInsets.zero, icon: const Icon(Icons.keyboard_arrow_up), onPressed: () {})),
-                    SizedBox(height: 24, child: IconButton(padding: EdgeInsets.zero, icon: const Icon(Icons.keyboard_arrow_down), onPressed: () {})),
-                  ],
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 28),
-                  onPressed: () {
-                    context.read<FridgeProvider>().deleteItem(item.id);
-                  },
-                ),
-              ],
-            ),
-          ],
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.fastfood_outlined)),
+        title: Text(item.productName, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('Số lượng: ${item.quantity} ${item.unit}\nTình trạng: ${_buildStatusText()}'),
+        isThreeLine: true,
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, color: Colors.red),
+          onPressed: () => context.read<FridgeProvider>().deleteItem(item.id),
         ),
       ),
     );

@@ -16,9 +16,7 @@ Family _$FamilyFromJson(Map<String, dynamic> json) => Family(
           ? null
           : FamilyCreator.fromJson(json['createdBy'] as Map<String, dynamic>),
       memberCount: (json['memberCount'] as num?)?.toInt(),
-      createdAt: json['createdAt'] == null
-          ? null
-          : DateTime.parse(json['createdAt'] as String),
+      createdAt: json['createdAt'] as String?,
     );
 
 Map<String, dynamic> _$FamilyToJson(Family instance) => <String, dynamic>{
@@ -29,7 +27,7 @@ Map<String, dynamic> _$FamilyToJson(Family instance) => <String, dynamic>{
       'inviteCode': instance.inviteCode,
       'createdBy': instance.createdBy,
       'memberCount': instance.memberCount,
-      'createdAt': instance.createdAt?.toIso8601String(),
+      'createdAt': instance.createdAt,
     };
 
 FamilyCreator _$FamilyCreatorFromJson(Map<String, dynamic> json) =>

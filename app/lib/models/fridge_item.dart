@@ -2,52 +2,58 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'fridge_item.g.dart';
 
+// A simplified model for the 'addedBy' field
+@JsonSerializable()
+class AddedBy {
+  final int id;
+  final String username;
+  final String fullName;
+
+  const AddedBy({
+    required this.id,
+    required this.username,
+    required this.fullName,
+  });
+
+  factory AddedBy.fromJson(Map<String, dynamic> json) => _$AddedByFromJson(json);
+  Map<String, dynamic> toJson() => _$AddedByToJson(this);
+}
+
 @JsonSerializable()
 class FridgeItem {
   final int id;
-  final String name;
-  final double? quantity;
-  final String? unit;
-  final DateTime? purchaseDate;
-  final DateTime expiryDate;
-  final String? location;
-  final String? imageUrl;
+  final int familyId;
+  final String productName;
+  final String? customProductName;
+  final double quantity;
+  final String unit;
+  final DateTime? expirationDate;
+  final String location;
+  final String? note;
+  // FIX: Use the new, simpler AddedBy model
+  final AddedBy addedBy;
+  final bool isExpiringSoon;
+  final bool isExpired;
+  final int? daysUntilExpiration;
+  final DateTime createdAt;
+  final DateTime updatedAt;
 
-  // A computed property to determine if the item is expiring soon
-  bool get isExpiringSoon {
-    final difference = expiryDate.difference(DateTime.now()).inDays;
-    return difference <= 3 && difference >= 0;
-  }
-  
-  String get status {
-     final now = DateTime.now();
-    final difference = expiryDate.difference(now);
-
-    if (difference.isNegative) {
-      return 'Đã hết hạn';
-    }
-    final days = difference.inDays;
-    if (days == 0) {
-        final hours = difference.inHours;
-        if (hours > 0) return 'còn $hours tiếng';
-        final minutes = difference.inMinutes;
-        return 'còn $minutes phút';
-    }
-    if (days < 30) {
-      return 'còn $days ngày';
-    }
-    return 'còn ${days ~/ 30} tháng';
-  }
-
-  FridgeItem({
+  const FridgeItem({
     required this.id,
-    required this.name,
-    this.quantity,
-    this.unit,
-    this.purchaseDate,
-    required this.expiryDate,
-    this.location,
-    this.imageUrl,
+    required this.familyId,
+    required this.productName,
+    this.customProductName,
+    required this.quantity,
+    required this.unit,
+    this.expirationDate,
+    required this.location,
+    this.note,
+    required this.addedBy,
+    required this.isExpiringSoon,
+    required this.isExpired,
+    this.daysUntilExpiration,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
   factory FridgeItem.fromJson(Map<String, dynamic> json) => _$FridgeItemFromJson(json);

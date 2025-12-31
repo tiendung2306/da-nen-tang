@@ -8,16 +8,32 @@ class FridgeProvider extends BaseProvider {
   final ApiService _apiService = locator<ApiService>();
 
   List<FridgeItem> _items = [];
-  List<FridgeItem> get items => _items;
-
   String? _errorMessage;
-  String? get errorMessage => _errorMessage;
 
-  Future<void> fetchFridgeItems(int familyId) async {
+  int _currentPage = 0;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+
+  List<FridgeItem> get items => _items;
+  String? get errorMessage => _errorMessage;
+  bool get isLoadingMore => _isLoadingMore;
+
+  Future<void> fetchFridgeItems(int familyId, {bool isRefresh = false}) async {
+    if (isRefresh) {
+      _currentPage = 0;
+      _items = [];
+      _hasMore = true;
+    }
     setStatus(ViewStatus.Loading);
     _errorMessage = null;
     try {
-      _items = await _apiService.getFridgeItems(familyId);
+      final newItems = await _apiService.getFridgeItems(familyId, page: _currentPage);
+      if (newItems.isEmpty) {
+        _hasMore = false;
+      } else {
+        _items.addAll(newItems);
+        _currentPage++;
+      }
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -25,11 +41,29 @@ class FridgeProvider extends BaseProvider {
     }
   }
 
+  Future<void> fetchMoreItems(int familyId) async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+    try {
+      final newItems = await _apiService.getFridgeItems(familyId, page: _currentPage);
+      if (newItems.isEmpty) {
+        _hasMore = false;
+      } else {
+        _items.addAll(newItems);
+        _currentPage++;
+      }
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> addFridgeItem(Map<String, dynamic> itemData) async {
-    // We don't set loading status here to avoid blocking the main list UI
     try {
       final newItem = await _apiService.addFridgeItem(itemData);
-      // Add the new item returned from the backend (with its ID) to the list
       _items.insert(0, newItem);
       notifyListeners();
     } catch (e) {
@@ -45,7 +79,7 @@ class FridgeProvider extends BaseProvider {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners(); 
+      notifyListeners();
     }
   }
 }

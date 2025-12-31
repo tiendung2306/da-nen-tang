@@ -12,12 +12,12 @@ class Family {
   final String? inviteCode;
   final FamilyCreator? createdBy;
   final int? memberCount;
-  final DateTime? createdAt;
+  // FIX: Changed to String? to match the API response
+  final String? createdAt;
 
-  // Getter để lấy tên trưởng nhóm
   String? get leaderName => createdBy?.fullName;
 
-  Family({
+  const Family({
     required this.id,
     required this.name,
     this.description,
@@ -38,7 +38,7 @@ class FamilyCreator {
   final String username;
   final String fullName;
 
-  FamilyCreator({
+  const FamilyCreator({
     required this.id,
     required this.username,
     required this.fullName,
@@ -59,7 +59,7 @@ class FamilyMember {
   final String? avatarUrl;
   final DateTime? joinedAt;
 
-  FamilyMember({
+  const FamilyMember({
     required this.id,
     required this.username,
     required this.fullName,
@@ -71,7 +71,6 @@ class FamilyMember {
   });
 
   factory FamilyMember.fromJson(Map<String, dynamic> json) {
-    // Handle both formats: nested user object or flat structure
     if (json.containsKey('user') && json['user'] != null) {
       final user = json['user'] as Map<String, dynamic>;
       return FamilyMember(
@@ -85,7 +84,6 @@ class FamilyMember {
         joinedAt: json['joinedAt'] != null ? DateTime.parse(json['joinedAt']) : null,
       );
     } else {
-      // Flat structure from API
       return FamilyMember(
         id: json['userId'] as int,
         username: json['username'] as String? ?? '',

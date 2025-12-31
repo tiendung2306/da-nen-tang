@@ -4,8 +4,8 @@ import 'package:flutter_boilerplate/pages/auth/profile_page.dart';
 import 'package:flutter_boilerplate/pages/family/family_list_page.dart';
 import 'package:flutter_boilerplate/pages/fridge/fridge_page.dart';
 import 'package:flutter_boilerplate/pages/home/home_page.dart';
-import 'package:flutter_boilerplate/pages/recipe/recipe_list_page.dart'; // Import the new recipe list page
-import 'package:flutter_boilerplate/providers/auth_provider.dart';
+import 'package:flutter_boilerplate/pages/recipe/recipe_list_page.dart';
+import 'package:flutter_boilerplate/providers/family_provider.dart'; // Import FamilyProvider
 import 'package:flutter_boilerplate/providers/fridge_provider.dart';
 
 class MainPage extends StatefulWidget {
@@ -18,20 +18,40 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  // FIX: Replaced the placeholder with the actual RecipeListPage
   final List<Widget> _pages = <Widget>[
     const HomePage(),
     const FamilyListPage(), 
     const FridgePage(),
-    const RecipeListPage(), // Use the new RecipeListPage for the fourth tab
+    const RecipeListPage(),
     const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
-    if (index == 2) { // Fridge tab
-      final authProvider = context.read<AuthProvider>();
-      context.read<FridgeProvider>().fetchFridgeItems(1); 
+    final familyProvider = context.read<FamilyProvider>();
+
+    // Special handling for the Fridge tab
+    if (index == 2) { // Index 2 is the Fridge tab
+      final selectedFamily = familyProvider.selectedFamily;
+      
+      // If no family is selected, show a message and switch to the Family tab
+      if (selectedFamily == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Vui lòng chọn một nhóm để xem tủ lạnh.'),
+            backgroundColor: Colors.amber,
+          ),
+        );
+        // Switch to the Family tab (index 1)
+        setState(() {
+          _selectedIndex = 1;
+        });
+        return; // Stop further execution
+      }
+      
+      // If a family is selected, fetch its fridge items
+      context.read<FridgeProvider>().fetchFridgeItems(selectedFamily.id, isRefresh: true);
     }
+
     setState(() {
       _selectedIndex = index;
     });
