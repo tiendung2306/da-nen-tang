@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/models/fridge_item.dart';
-import 'package:flutter_boilerplate/models/family_model.dart'; // Import Family model
+import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/providers/fridge_provider.dart';
-import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/pages/fridge/add_fridge_item_page.dart';
 
@@ -20,19 +19,7 @@ class _FridgePageState extends State<FridgePage> {
   @override
   void initState() {
     super.initState();
-    final fridgeProvider = context.read<FridgeProvider>();
-    final familyProvider = context.read<FamilyProvider>();
-    final selectedFamilyId = familyProvider.selectedFamily?.id;
-
-    if (selectedFamilyId != null) {
-      fridgeProvider.fetchFridgeItems(selectedFamilyId, isRefresh: true);
-    }
-
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent && selectedFamilyId != null) {
-        fridgeProvider.fetchMoreItems(selectedFamilyId);
-      }
-    });
+    // Data is now fetched when a family is selected
   }
 
   @override
@@ -43,7 +30,8 @@ class _FridgePageState extends State<FridgePage> {
 
   @override
   Widget build(BuildContext context) {
-    final familyProvider = Provider.of<FamilyProvider>(context);
+    final familyProvider = context.watch<FamilyProvider>();
+    final fridgeProvider = context.watch<FridgeProvider>();
     final selectedFamily = familyProvider.selectedFamily;
 
     return Scaffold(
@@ -53,13 +41,14 @@ class _FridgePageState extends State<FridgePage> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: selectedFamily == null
-              ? () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn nhóm để thêm đồ.')))
-              : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddFridgeItemPage())),
+                ? () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn nhóm để thêm đồ.')))
+                : () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AddFridgeItemPage())),
           )
         ],
       ),
       body: Column(
         children: [
+          // Family Selector Dropdown
           if (familyProvider.families.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -77,41 +66,39 @@ class _FridgePageState extends State<FridgePage> {
                 },
               ),
             ),
+          
+          // Fridge Content
           Expanded(
-            child: _buildFridgeContent(selectedFamily),
+            child: _buildFridgeContent(fridgeProvider, selectedFamily),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFridgeContent(Family? selectedFamily) {
-    return Consumer<FridgeProvider>(
-      builder: (context, provider, child) {
-        if (selectedFamily == null) {
-          return const Center(child: Text('Vui lòng chọn một nhóm để xem tủ lạnh.'));
-        }
-        if (provider.viewStatus == ViewStatus.Loading && provider.items.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (provider.items.isEmpty) {
-          return const Center(child: Text('Tủ lạnh trống!'));
-        }
+  Widget _buildFridgeContent(FridgeProvider provider, Family? selectedFamily) {
+    if (selectedFamily == null) {
+      return const Center(child: Text('Vui lòng chọn một nhóm để xem tủ lạnh.'));
+    }
+    if (provider.isLoading && provider.items.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (provider.items.isEmpty) {
+      return const Center(child: Text('Tủ lạnh trống!'));
+    }
 
-        return RefreshIndicator(
-          onRefresh: () => provider.fetchFridgeItems(selectedFamily.id, isRefresh: true),
-          child: ListView.builder(
-            controller: _scrollController,
-            itemCount: provider.items.length + (provider.isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == provider.items.length) {
-                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
-              }
-              return FridgeListItem(item: provider.items[index]);
-            },
-          ),
-        );
-      },
+    return RefreshIndicator(
+      onRefresh: () => provider.fetchFridgeItems(selectedFamily.id, isRefresh: true),
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: provider.items.length + (provider.isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == provider.items.length) {
+            return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+          }
+          return FridgeListItem(item: provider.items[index]);
+        },
+      ),
     );
   }
 }
