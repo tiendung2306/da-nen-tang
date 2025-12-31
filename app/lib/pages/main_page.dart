@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/pages/auth/profile_page.dart';
-import 'package:flutter_boilerplate/pages/family/family_list_page.dart'; // Import the new family list page
+import 'package:flutter_boilerplate/pages/family/family_list_page.dart';
 import 'package:flutter_boilerplate/pages/fridge/fridge_page.dart';
 import 'package:flutter_boilerplate/pages/home/home_page.dart';
+import 'package:flutter_boilerplate/pages/recipe/recipe_list_page.dart'; // Import the new recipe list page
 import 'package:flutter_boilerplate/providers/auth_provider.dart';
 import 'package:flutter_boilerplate/providers/fridge_provider.dart';
 
@@ -17,24 +18,20 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _selectedIndex = 0;
 
-  // The list of pages is now stateful to handle different root pages for each tab
+  // FIX: Replaced the placeholder with the actual RecipeListPage
   final List<Widget> _pages = <Widget>[
     const HomePage(),
-    const FamilyListPage(), // Use the new FamilyListPage
+    const FamilyListPage(), 
     const FridgePage(),
-    const PlaceholderWidget(pageName: 'Thực Đơn'),
+    const RecipeListPage(), // Use the new RecipeListPage for the fourth tab
     const ProfilePage(),
   ];
 
   void _onItemTapped(int index) {
-    // Special handling for fetching data when a tab is selected
     if (index == 2) { // Fridge tab
       final authProvider = context.read<AuthProvider>();
-      // TODO: Replace hardcoded familyId with the actual family ID from userInfo.
-      context.read<FridgeProvider>().fetchFridgeItems(1);
+      context.read<FridgeProvider>().fetchFridgeItems(1); 
     }
-    // Note: Family list is fetched automatically within FamilyListPage itself.
-
     setState(() {
       _selectedIndex = index;
     });
@@ -62,19 +59,6 @@ class _MainPageState extends State<MainPage> {
         type: BottomNavigationBarType.fixed,
         showUnselectedLabels: true,
       ),
-    );
-  }
-}
-
-class PlaceholderWidget extends StatelessWidget {
-  final String pageName;
-  const PlaceholderWidget({Key? key, required this.pageName}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(pageName)),
-      body: Center(child: Text('Trang $pageName', style: Theme.of(context).textTheme.headlineMedium)),
     );
   }
 }

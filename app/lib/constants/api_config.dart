@@ -18,15 +18,20 @@ class ApiConfig {
     return base + apiVersion;
   }
 
-  // --- Auth Endpoints ---
+  // --- Auth & User ---
   static const String login = '/auth/login';
   static const String register = '/auth/register';
+  static const String userSearch = '/users/search';
 
-  // --- Fridge Item Endpoints ---
-  static const String fridgeItems = '/fridge-items';
-  static String familyFridgeItems(int familyId) => '/families/$familyId/fridge-items';
-  // ... other fridge endpoints
-  static String fridgeItemById(int id) => '/fridge-items/$id';
+  // --- Friend Endpoints ---
+  static const String friends = '/friends';
+  static const String friendRequests = '/friends/requests';
+  static const String sentFriendRequests = '/friends/requests/sent';
+  static const String receivedFriendRequests = '/friends/requests/received';
+  static String respondToFriendRequest(String id) => '/friends/requests/$id/respond';
+  static String cancelFriendRequest(String id) => '/friends/requests/$id';
+  static String unfriend(String userId) => '/friends/$userId';
+  static String friendStatus(String userId) => '/friends/status/$userId';
 
   // --- Family Endpoints ---
   static const String families = '/families';
@@ -36,4 +41,22 @@ class ApiConfig {
   static String leaveFamily(int id) => '/families/$id/leave';
   static String regenerateInviteCode(int id) => '/families/$id/regenerate-invite-code';
   static String familyMember(int familyId, int userId) => '/families/$familyId/members/$userId';
+
+  // --- Fridge Endpoints ---
+  static const String fridgeItems = '/fridge-items';
+  static String familyFridgeItems(int familyId) => '/families/$familyId/fridge-items';
+  static String activeFridgeItems(int familyId) => '/families/$familyId/fridge-items/active';
+  static String expiringFridgeItems(int familyId) => '/families/$familyId/fridge-items/expiring';
+  static String expiredFridgeItems(int familyId) => '/families/$familyId/fridge-items/expired';
+  static String fridgeStatistics(int familyId) => '/families/$familyId/fridge-items/statistics';
+  static String fridgeItemById(int id) => '/fridge-items/$id';
+  static String consumeFridgeItem(int id) => '/fridge-items/$id/consume';
+  static String discardFridgeItem(int id) => '/fridge-items/$id/discard';
+
+  // --- Recipe Endpoints ---
+  static const String recipes = '/recipes';
+  static String recipeById(int id) => '/recipes/$id';
+  static const String searchRecipes = '/recipes/search'; // query param: title
+  static const String myRecipes = '/recipes/my-recipes';
+  static String recipeSuggestions(int familyId) => '/recipes/suggestions/$familyId';
 }

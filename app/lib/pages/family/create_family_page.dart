@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
+import 'package:flutter_boilerplate/providers/friend_provider.dart';
+import 'package:flutter_boilerplate/models/auth_model.dart';
 
 class CreateFamilyPage extends StatefulWidget {
   const CreateFamilyPage({Key? key}) : super(key: key);
@@ -12,20 +14,30 @@ class CreateFamilyPage extends StatefulWidget {
 class _CreateFamilyPageState extends State<CreateFamilyPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _membersController = TextEditingController();
   bool _isLoading = false;
-  // Placeholder for selected members
-  final List<String> _selectedMembers = [];
+  final List<UserInfo> _selectedMembers = [];
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<FriendProvider>().fetchFriends();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _membersController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+      setState(() => _isLoading = true);
 
       final familyData = {
         'name': _nameController.text,
-        // TODO: Add selected member IDs to the request body when the API supports it
-        // 'memberIds': _selectedMembers.map((member) => member.id).toList(),
+        'memberIds': _selectedMembers.map((member) => member.id).toList(),
       };
 
       try {
@@ -34,7 +46,7 @@ class _CreateFamilyPageState extends State<CreateFamilyPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Tạo nhóm thành công!'), backgroundColor: Colors.green),
           );
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(true);
         }
       } catch (e) {
         if (mounted) {
@@ -44,12 +56,67 @@ class _CreateFamilyPageState extends State<CreateFamilyPage> {
         }
       } finally {
         if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
+          setState(() => _isLoading = false);
         }
       }
     }
+  }
+
+  void _showMemberSelectionDialog() {
+    final friends = context.read<FriendProvider>().friends;
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final List<UserInfo> tempList = List.from(_selectedMembers);
+
+        return AlertDialog(
+          title: const Text('Chọn thành viên'),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return SizedBox(
+                width: double.maxFinite,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: friends.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final friend = friends[index];
+                    final isSelected = tempList.any((member) => member.id == friend.id);
+                    return CheckboxListTile(
+                      title: Text(friend.name),
+                      value: isSelected,
+                      onChanged: (bool? value) {
+                        setState(() {
+                          if (value == true) {
+                            tempList.add(friend);
+                          } else {
+                            tempList.removeWhere((member) => member.id == friend.id);
+                          }
+                        });
+                      },
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+          actions: <Widget>[
+            TextButton(child: const Text('Hủy'), onPressed: () => Navigator.of(context).pop()),
+            ElevatedButton(
+              child: const Text('Xác nhận'),
+              onPressed: () {
+                setState(() {
+                  _selectedMembers.clear();
+                  _selectedMembers.addAll(tempList);
+                  _membersController.text = _selectedMembers.map((m) => m.name).join(', ');
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -60,10 +127,7 @@ class _CreateFamilyPageState extends State<CreateFamilyPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.of(context).pop()),
         title: const Text('Tạo nhóm mới', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
@@ -75,18 +139,17 @@ class _CreateFamilyPageState extends State<CreateFamilyPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               const SizedBox(height: 20),
-              // Avatar
+              // RESTORED: Avatar
               Center(
                 child: CircleAvatar(
                   radius: 70,
                   backgroundColor: Colors.grey[200],
                   child: const Text('Avatar nhóm', style: TextStyle(color: Colors.grey)),
-                  // TODO: Add functionality to pick an image
                 ),
               ),
               const SizedBox(height: 40),
 
-              // Group Name
+              // RESTORED: Group Name field
               const Text('Tên nhóm', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               TextFormField(
@@ -99,21 +162,22 @@ class _CreateFamilyPageState extends State<CreateFamilyPage> {
               ),
               const SizedBox(height: 24),
 
-              // Add Members Dropdown (Placeholder)
+              // Member selection field
               const Text('Thêm thành viên', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
+              TextFormField(
+                controller: _membersController,
+                readOnly: true,
+                onTap: _showMemberSelectionDialog,
                 decoration: const InputDecoration(
+                  hintText: 'Thêm thành viên (ít nhất 1 thành viên)',
                   border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                  suffixIcon: Icon(Icons.arrow_drop_down),
                 ),
-                hint: const Text('Thêm thành viên( ít nhất 1 thành viên)'),
-                // TODO: Populate with a list of users to add
-                items: [],
-                onChanged: (value) {
-                  // Handle member selection
-                },
                 validator: (value) {
-                  // if (_selectedMembers.isEmpty) return 'Vui lòng thêm ít nhất 1 thành viên';
+                  if (_selectedMembers.isEmpty) {
+                    return 'Vui lòng thêm ít nhất 1 thành viên';
+                  }
                   return null;
                 },
               ),

@@ -25,14 +25,14 @@ class FamilyController(
     fun createFamily(
         @RequestParam("name") name: String,
         @RequestParam("description", required = false) description: String?,
-        @RequestParam("friendIds") friendIds: List<Long>,
+        @RequestParam("friendIds", required = false) friendIds: List<Long>?,
         @Parameter(description = "Family image")
         @RequestPart("image", required = false) image: MultipartFile?
     ): ResponseEntity<ApiResponse<FamilyResponse>> {
         val request = CreateFamilyRequest(
             name = name,
             description = description,
-            friendIds = friendIds
+            friendIds = friendIds ?: emptyList()
         )
         val family = familyService.createFamily(request, image)
         return ResponseEntity
@@ -170,4 +170,3 @@ class FamilyController(
             .body(ApiResponse.created(invitation, "Invitation sent"))
     }
 }
-

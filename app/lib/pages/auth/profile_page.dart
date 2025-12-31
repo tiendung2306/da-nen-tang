@@ -1,112 +1,186 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/providers/auth_provider.dart';
-import 'package:flutter_boilerplate/pages/auth/landing_page.dart'; // Import LandingPage
+import 'package:flutter_boilerplate/providers/friend_provider.dart';
+import 'package:flutter_boilerplate/providers/base_provider.dart';
+import 'package:flutter_boilerplate/models/auth_model.dart';
+import 'package:flutter_boilerplate/models/friend_model.dart';
+import 'package:flutter_boilerplate/pages/auth/landing_page.dart';
+import 'user_search_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final userInfo = authProvider.userInfo;
-    final orangeColor = const Color(0xFFF26F21);
+  _ProfilePageState createState() => _ProfilePageState();
+}
 
+class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<FriendProvider>(context, listen: false).fetchAll();
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
-        elevation: 0,
+        elevation: 1,
         title: const Center(
-          child: Text('Thông Tin Tài Khoản', style: TextStyle(color: Colors.black)),
+          child: Text('Tài Khoản & Bạn Bè', style: TextStyle(color: Colors.black)),
+        ),
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: const Color(0xFFF26F21),
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFFF26F21),
+          tabs: const [
+            Tab(icon: Icon(Icons.person)),
+            Tab(icon: Icon(Icons.people)),
+            Tab(icon: Icon(Icons.inbox)),
+          ],
         ),
       ),
-      body: userInfo == null
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
-              child: Column(
-                children: [
-                  const CircleAvatar(
-                    radius: 50,
-                    backgroundColor: Color(0xFFF0F0F0),
-                    child: Text('Avatar', style: TextStyle(color: Colors.grey)),
-                  ),
-                  const SizedBox(height: 32),
-
-                  _buildInfoTextField(
-                    label: 'Tên tài khoản',
-                    value: userInfo.fullName,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoTextField(
-                    label: 'Email',
-                    value: userInfo.email,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoTextField(
-                    label: 'Số điện thoại',
-                    value: '0123456789', // Placeholder
-                  ),
-                  const SizedBox(height: 40),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () { /* TODO: Implement change password */ },
-                      child: const Text('Đổi mật khẩu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: orangeColor,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        // --- NAVIGATION FIX: Manually navigate after logout ---
-                        Provider.of<AuthProvider>(context, listen: false).logout();
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const LandingPage()),
-                          (Route<dynamic> route) => false,
-                        );
-                      },
-                      child: Text('Đăng xuất', style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.bold)),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.grey),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildProfileInfoTab(),
+          _buildFriendsTab(),
+          _buildRequestsTab(),
+        ],
+      ),
     );
   }
 
-  Widget _buildInfoTextField({required String label, required String value}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(height: 8),
-        TextField(
-          controller: TextEditingController(text: value),
-          readOnly: true,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-            filled: true,
-            fillColor: Colors.grey[100],
+  // Tab 1: Personal Information - Restored
+  Widget _buildProfileInfoTab() {
+    final authProvider = context.watch<AuthProvider>();
+    final userInfo = authProvider.userInfo;
+    if (userInfo == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40.0),
+      child: Column(
+        children: [
+          const CircleAvatar(radius: 50, backgroundColor: Color(0xFFF0F0F0), child: Icon(Icons.person, size: 50, color: Colors.grey)),
+          const SizedBox(height: 32),
+          _buildInfoRow(label: 'Tên tài khoản', value: userInfo.fullName),
+          _buildInfoRow(label: 'Email', value: userInfo.email),
+          const SizedBox(height: 40),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton(
+              onPressed: () => Provider.of<AuthProvider>(context, listen: false).logout(),
+              child: const Text('Đăng xuất', style: TextStyle(fontSize: 18, color: Colors.red, fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.grey), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  // Tab 2: Friends List - Restored
+  Widget _buildFriendsTab() {
+    return Scaffold(
+      body: Consumer<FriendProvider>(
+        builder: (context, friendProvider, child) {
+          if (friendProvider.viewStatus == ViewStatus.Loading && friendProvider.friends.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (friendProvider.friends.isEmpty) {
+            return const Center(child: Text('Chưa có bạn bè nào.\nNhấn nút + để tìm bạn.'));
+          }
+          return RefreshIndicator(
+            onRefresh: () => friendProvider.fetchFriends(),
+            child: ListView.builder(
+              itemCount: friendProvider.friends.length,
+              itemBuilder: (context, index) {
+                final friend = friendProvider.friends[index];
+                return ListTile(
+                  leading: CircleAvatar(child: Text(friend.name.substring(0, 1))),
+                  title: Text(friend.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.person_remove, color: Colors.red),
+                    onPressed: () => _showUnfriendDialog(context, friend),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => UserSearchPage())),
+        child: const Icon(Icons.add), 
+        backgroundColor: const Color(0xFFF26F21),
+      ),
+    );
+  }
+
+  // Tab 3: Friend Requests - Restored
+  Widget _buildRequestsTab() {
+    return Consumer<FriendProvider>(
+      builder: (context, friendProvider, child) {
+        if (friendProvider.viewStatus == ViewStatus.Loading && friendProvider.receivedRequests.isEmpty && friendProvider.sentRequests.isEmpty) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final validReceived = friendProvider.receivedRequests.where((r) => r.requester != null).toList();
+        final validSent = friendProvider.sentRequests.where((r) => r.addressee != null).toList();
+
+        return RefreshIndicator(
+          onRefresh: () => Future.wait([friendProvider.fetchReceivedRequests(), friendProvider.fetchSentRequests()]),
+          child: ListView(
+            children: [
+              _buildRequestList(title: 'Lời mời đã nhận', requests: validReceived, isReceived: true),
+              _buildRequestList(title: 'Lời mời đã gửi', requests: validSent, isReceived: false),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Helper Widgets - All restored
+  Widget _buildInfoRow({required String label, required String value}) {
+    return Padding(padding: const EdgeInsets.symmetric(vertical: 8.0), child: Row(children: [Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)), Expanded(child: Text(value, style: const TextStyle(fontSize: 16)))]));
+  }
+
+  void _showUnfriendDialog(BuildContext context, UserInfo friend) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text('Xác nhận'), content: Text('Bạn có chắc muốn hủy kết bạn với ${friend.name}?'), actions: [TextButton(child: const Text('Không'), onPressed: () => Navigator.of(ctx).pop()), TextButton(child: const Text('Có', style: TextStyle(color: Colors.red)), onPressed: () { context.read<FriendProvider>().removeFriend(friend.id.toString()); Navigator.of(ctx).pop(); })]));
+  }
+
+  Widget _buildRequestList({required String title, required List<FriendRequest> requests, required bool isReceived}) {
+    if (requests.isEmpty) {
+      return Padding(padding: const EdgeInsets.symmetric(vertical: 24.0), child: Center(child: Text('Không có $title nào.', style: const TextStyle(color: Colors.grey))));
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Padding(padding: const EdgeInsets.fromLTRB(16, 20, 16, 10), child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black))), ListView.builder(shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: requests.length, itemBuilder: (context, index) { final request = requests[index]; final user = isReceived ? request.requester! : request.addressee!; return ListTile(leading: CircleAvatar(child: Text(user.name.substring(0, 1))), title: Text(user.name, style: const TextStyle(fontWeight: FontWeight.bold)), trailing: isReceived ? _buildRespondButtons(context, request.id.toString()) : _buildCancelButton(context, request.id.toString())); }), const Divider()]);
+  }
+
+  Widget _buildRespondButtons(BuildContext context, String requestId) {
+    final friendProvider = context.read<FriendProvider>();
+    return Row(mainAxisSize: MainAxisSize.min, children: [ElevatedButton(onPressed: () => friendProvider.respondToRequest(requestId, true), child: const Text('Chấp nhận')), const SizedBox(width: 8), OutlinedButton(onPressed: () => friendProvider.respondToRequest(requestId, false), child: const Text('Từ chối'))]);
+  }
+
+  Widget _buildCancelButton(BuildContext context, String requestId) {
+    final friendProvider = context.read<FriendProvider>();
+    return OutlinedButton(onPressed: () => friendProvider.cancelRequest(requestId), child: const Text('Hủy'));
   }
 }

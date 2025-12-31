@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'constants/app_theme.dart';
 import 'constants/strings.dart';
@@ -11,8 +9,10 @@ import 'pages/auth/landing_page.dart';
 import 'pages/main_page.dart';
 import 'providers/auth_provider.dart';
 import 'providers/base_provider.dart';
-import 'providers/family_provider.dart'; // Import FamilyProvider
+import 'providers/family_provider.dart';
+import 'providers/friend_provider.dart';
 import 'providers/fridge_provider.dart';
+import 'providers/recipe_provider.dart'; // Import RecipeProvider
 import 'routes.dart';
 import 'services/locator.dart';
 import 'services/shared_pref/shared_pref.dart';
@@ -21,31 +21,22 @@ import 'utils/translation.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
-  await SharedPref.init();
   setupLocator();
+  await SharedPref.init();
 
-  final authProvider = AuthProvider();
+  final authProvider = AuthProvider()..loadUser();
 
-  await SentryFlutter.init(
-    (options) async {
-      options.dsn = Strings.dnsSentry;
-      await Firebase.initializeApp();
-    },
-    appRunner: () => runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider.value(value: authProvider),
-          ChangeNotifierProvider(create: (_) => BaseProvider()),
-          ChangeNotifierProvider(create: (_) => FridgeProvider()),
-          ChangeNotifierProvider(create: (_) => FamilyProvider()), // Register FamilyProvider
-        ],
-        child: const MyApp(),
-      ),
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider(create: (_) => BaseProvider()),
+        ChangeNotifierProvider(create: (_) => FridgeProvider()),
+        ChangeNotifierProvider(create: (_) => FamilyProvider()),
+        ChangeNotifierProvider(create: (_) => FriendProvider()),
+        ChangeNotifierProvider(create: (_) => RecipeProvider()), // Register RecipeProvider
+      ],
+      child: const MyApp(),
     ),
   );
 }
@@ -60,7 +51,15 @@ class MyApp extends StatelessWidget {
       title: Strings.appName,
       theme: themeData,
       routes: Routes.routes,
-      home: const LandingPage(),
+      home: Consumer<AuthProvider>(
+        builder: (context, auth, child) {
+          if (auth.isLoggedIn) {
+            return const MainPage();
+          } else {
+            return const LandingPage();
+          }
+        },
+      ),
       supportedLocales: const [
         Locale('en'),
         Locale('vi'),

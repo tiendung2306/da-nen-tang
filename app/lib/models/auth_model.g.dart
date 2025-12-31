@@ -11,8 +11,10 @@ UserInfo _$UserInfoFromJson(Map<String, dynamic> json) => UserInfo(
       username: json['username'] as String,
       email: json['email'] as String,
       fullName: json['fullName'] as String,
-      isActive: json['isActive'] as bool,
-      roles: (json['roles'] as List<dynamic>).map((e) => e as String).toList(),
+      isActive: json['isActive'] as bool? ?? false,
+      roles:
+          (json['roles'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+              const [],
     );
 
 Map<String, dynamic> _$UserInfoToJson(UserInfo instance) => <String, dynamic>{

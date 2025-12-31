@@ -51,3 +51,8 @@ data class FriendshipStatusResponse(
     val friendshipId: Long?
 )
 
+// New DTO for the response of accepting a friend request
+data class AcceptFriendRequestResponse(
+    val friendship: FriendResponse,
+    val request: FriendRequestResponse
+)

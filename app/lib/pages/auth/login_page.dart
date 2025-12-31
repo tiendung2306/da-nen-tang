@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/providers/auth_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/routes.dart';
-import 'package:flutter_boilerplate/pages/main_page.dart'; // Import MainPage for navigation
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -29,21 +28,7 @@ class _LoginPageState extends State<LoginPage> {
         username: _usernameController.text,
         password: _passwordController.text,
       );
-
-      // --- NAVIGATION FIX: Manually navigate after successful login ---
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Đăng nhập thành công!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Navigate to MainPage and remove all previous routes from the stack.
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const MainPage()),
-          (Route<dynamic> route) => false, // This predicate removes all routes.
-        );
-      }
+      // No manual navigation needed here. The Consumer in MyApp will handle it.
 
     } catch (e) {
       if (mounted) {
@@ -60,7 +45,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final orangeColor = const Color(0xFFF26F21);
-    // The isLoading state is now correctly managed by the provider.
     final isLoading = context.watch<AuthProvider>().viewStatus == ViewStatus.Loading;
 
     return Scaffold(
@@ -81,7 +65,6 @@ class _LoginPageState extends State<LoginPage> {
             child: Form(
               key: _formKey,
               child: Column(
-                // ... (rest of the UI remains the same)
                  crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   const SizedBox(height: 20),

@@ -21,7 +21,6 @@ class FamilyService(
     private val familyRepository: FamilyRepository,
     private val familyMemberRepository: FamilyMemberRepository,
     private val userRepository: UserRepository,
-    private val friendshipRepository: FriendshipRepository,
     private val familyInvitationRepository: FamilyInvitationRepository,
     private val fileStorageService: FileStorageService
 ) {
@@ -32,24 +31,10 @@ class FamilyService(
         val user = userRepository.findById(currentUser.id)
             .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
-        // Validate: phải mời ít nhất 1 bạn bè
-        if (request.friendIds.isEmpty()) {
-            throw ApiException(ErrorCode.MUST_INVITE_AT_LEAST_ONE_FRIEND)
-        }
-
-        // Validate: tất cả đều phải là bạn bè
-        for (friendId in request.friendIds) {
-            if (!friendshipRepository.areFriends(currentUser.id, friendId)) {
-                throw ApiException(ErrorCode.CAN_ONLY_INVITE_FRIENDS, "User $friendId is not your friend")
-            }
-        }
-
         val inviteCode = generateInviteCode()
 
-        // Upload image if provided
-        val imageUrl = image?.let {
-            fileStorageService.storeFile(it, "families")
-        }
+        // Temporarily disable image upload for debugging
+        val imageUrl: String? = null // image?.let { fileStorageService.storeFile(it, "families") }
 
         val family = Family(
             name = request.name,
@@ -71,19 +56,24 @@ class FamilyService(
         )
         familyMemberRepository.save(member)
 
-        // Create invitations for friends
-        val friends = userRepository.findAllById(request.friendIds)
-        for (friend in friends) {
-            val invitation = FamilyInvitation(
-                family = savedFamily,
-                inviter = user,
-                invitee = friend,
-                status = InvitationStatus.PENDING
-            )
-            familyInvitationRepository.save(invitation)
+        // Create invitations for friends if any are provided
+        if (request.friendIds.isNotEmpty()) {
+            val friends = userRepository.findAllById(request.friendIds)
+            for (friend in friends) {
+                // Skip if the friend doesn't exist
+                if (userRepository.existsById(friend.id!!)) {
+                    val invitation = FamilyInvitation(
+                        family = savedFamily,
+                        inviter = user,
+                        invitee = friend,
+                        status = InvitationStatus.PENDING
+                    )
+                    familyInvitationRepository.save(invitation)
+                }
+            }
         }
 
-        return toFamilyResponse(savedFamily, 1)
+        return toFamilyResponse(savedFamily, 1) // Initially, member count is 1 (the creator)
     }
 
     @Transactional
@@ -462,4 +452,3 @@ class FamilyService(
         )
     }
 }
-

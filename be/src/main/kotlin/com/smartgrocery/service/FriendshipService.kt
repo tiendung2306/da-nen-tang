@@ -21,26 +21,22 @@ class FriendshipService(
     fun sendFriendRequest(request: SendFriendRequestDto): FriendRequestResponse {
         val currentUser = getCurrentUser()
 
-        // Không thể gửi lời mời kết bạn cho chính mình
         if (request.userId == currentUser.id) {
             throw ApiException(ErrorCode.CANNOT_SEND_REQUEST_TO_SELF)
         }
 
-        // Kiểm tra user tồn tại
         val addressee = userRepository.findById(request.userId)
             .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
         val requester = userRepository.findById(currentUser.id)
             .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
 
-        // Kiểm tra đã có friendship chưa
         val existingFriendship = friendshipRepository.findByUserPair(currentUser.id, request.userId)
         if (existingFriendship != null) {
             when (existingFriendship.status) {
                 FriendshipStatus.ACCEPTED -> throw ApiException(ErrorCode.ALREADY_FRIENDS)
                 FriendshipStatus.PENDING -> throw ApiException(ErrorCode.FRIEND_REQUEST_ALREADY_EXISTS)
                 FriendshipStatus.REJECTED -> {
-                    // Cho phép gửi lại nếu đã bị từ chối
                     existingFriendship.status = FriendshipStatus.PENDING
                     existingFriendship.requester = requester
                     existingFriendship.addressee = addressee
@@ -62,26 +58,38 @@ class FriendshipService(
     }
 
     @Transactional
-    fun respondToFriendRequest(friendshipId: Long, accept: Boolean): FriendRequestResponse {
+    fun respondToFriendRequest(friendshipId: Long, accept: Boolean): Any {
         val currentUser = getCurrentUser()
 
         val friendship = friendshipRepository.findByIdWithUsers(friendshipId)
             ?: throw ResourceNotFoundException(ErrorCode.FRIENDSHIP_NOT_FOUND)
 
-        // Chỉ người được gửi mới có thể phản hồi
         if (friendship.addressee.id != currentUser.id) {
             throw ForbiddenException(ErrorCode.NOT_YOUR_FRIEND_REQUEST.message)
         }
 
-        // Chỉ có thể phản hồi request đang pending
         if (friendship.status != FriendshipStatus.PENDING) {
             throw ApiException(ErrorCode.FRIEND_REQUEST_NOT_PENDING)
         }
 
         friendship.status = if (accept) FriendshipStatus.ACCEPTED else FriendshipStatus.REJECTED
-        val saved = friendshipRepository.save(friendship)
+        val savedFriendship = friendshipRepository.save(friendship)
 
-        return toFriendRequestResponse(saved)
+        return if (accept) {
+            val newFriend = savedFriendship.requester
+            val friendResponse = FriendResponse(
+                id = newFriend.id!!,
+                username = newFriend.username,
+                fullName = newFriend.fullName,
+                email = newFriend.email,
+                friendshipId = savedFriendship.id!!,
+                friendsSince = savedFriendship.updatedAt
+            )
+            val requestResponse = toFriendRequestResponse(savedFriendship)
+            AcceptFriendRequestResponse(friendship = friendResponse, request = requestResponse)
+        } else {
+            toFriendRequestResponse(savedFriendship)
+        }
     }
 
     fun getFriends(): List<FriendResponse> {
@@ -162,7 +170,6 @@ class FriendshipService(
         val friendship = friendshipRepository.findByIdWithUsers(friendshipId)
             ?: throw ResourceNotFoundException(ErrorCode.FRIENDSHIP_NOT_FOUND)
 
-        // Chỉ người gửi mới có thể hủy
         if (friendship.requester.id != currentUser.id) {
             throw ForbiddenException("You can only cancel your own friend requests")
         }
@@ -203,4 +210,3 @@ class FriendshipService(
         )
     }
 }
-

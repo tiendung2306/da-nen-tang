@@ -33,7 +33,7 @@ class FriendController(
     fun respondToFriendRequest(
         @PathVariable id: Long,
         @Valid @RequestBody request: RespondFriendRequestDto
-    ): ResponseEntity<ApiResponse<FriendRequestResponse>> {
+    ): ResponseEntity<ApiResponse<Any>> {
         val result = friendshipService.respondToFriendRequest(id, request.accept)
         val message = if (request.accept) "Friend request accepted" else "Friend request rejected"
         return ResponseEntity.ok(ApiResponse.success(result, message))
@@ -87,4 +87,3 @@ class FriendController(
         return ResponseEntity.ok(ApiResponse.success("Unfriended successfully"))
     }
 }
-
