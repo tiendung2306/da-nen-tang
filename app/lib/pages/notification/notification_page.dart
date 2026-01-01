@@ -287,21 +287,18 @@ class _NotificationPageState extends State<NotificationPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              leading: Icon(
-                notification.isRead ? Icons.mark_email_unread : Icons.mark_email_read,
-                color: const Color(0xFFF26F21),
-              ),
-              title: Text(notification.isRead ? 'Đánh dấu chưa đọc' : 'Đánh dấu đã đọc'),
-              onTap: () {
-                Navigator.pop(ctx);
-                if (notification.isRead) {
-                  context.read<NotificationProvider>().markAsUnread([notification.id]);
-                } else {
+            if (!notification.isRead)
+              ListTile(
+                leading: const Icon(
+                  Icons.mark_email_read,
+                  color: Color(0xFFF26F21),
+                ),
+                title: const Text('Đánh dấu đã đọc'),
+                onTap: () {
+                  Navigator.pop(ctx);
                   context.read<NotificationProvider>().markAsRead([notification.id]);
-                }
-              },
-            ),
+                },
+              ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
               title: const Text('Xóa thông báo', style: TextStyle(color: Colors.red)),

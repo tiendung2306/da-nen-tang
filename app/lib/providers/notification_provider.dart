@@ -119,6 +119,9 @@ class NotificationProvider extends ChangeNotifier {
     }
   }
 
+  // markAsUnread is not supported by current API
+  // Comment this method if needed in future
+  /*
   Future<void> markAsUnread(List<int> ids) async {
     try {
       await _apiService.markNotificationsAsUnread(ids);
@@ -153,6 +156,7 @@ class NotificationProvider extends ChangeNotifier {
       rethrow;
     }
   }
+  */
 
   Future<void> markAllAsRead() async {
     try {
@@ -206,7 +210,11 @@ class NotificationProvider extends ChangeNotifier {
 
   Future<void> deleteAllNotifications() async {
     try {
-      await _apiService.deleteAllNotifications();
+      // Delete all notifications one by one since bulk delete API not available
+      final ids = _notifications.map((n) => n.id).toList();
+      for (final id in ids) {
+        await _apiService.deleteNotification(id);
+      }
       _notifications = [];
       _count = NotificationCount(total: 0, unread: 0);
       notifyListeners();

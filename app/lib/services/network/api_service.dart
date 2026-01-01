@@ -3,10 +3,12 @@ import 'package:flutter_boilerplate/services/shared_pref/shared_pref.dart';
 
 const BASE_URL = 'https://dev-api.timtour.vn/api/v1';
 
-class ApiService {
+/// Legacy ApiService - kept for reference. 
+/// Use lib/services/api/api_service.dart instead.
+class LegacyApiService {
   late final Dio client;
 
-  ApiService() {
+  LegacyApiService() {
     client = Dio();
     client.options.baseUrl = BASE_URL;
     client.options.connectTimeout = const Duration(milliseconds: 5000);
@@ -22,7 +24,7 @@ class ApiService {
   }
 
   Future<void> clientSetup() async {
-    final String? authToken = SharedPref.sharedPref.getString(AUTH_TOKEN);
+    final String? authToken = await SharedPref.getToken();
     if (authToken != null && authToken.isNotEmpty) {
       client.options.headers['Authorization'] = 'Bearer $authToken';
     }

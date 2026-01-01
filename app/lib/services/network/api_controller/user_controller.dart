@@ -1,12 +1,11 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_boilerplate/services/api/api_service.dart';
 import 'package:flutter_boilerplate/services/locator.dart';
 
-import '../api_service.dart';
-
+/// Legacy controller - kept for reference.
+/// Should migrate to use ApiService methods directly.
 class UserController {
-  UserController() : apiClient = apiService.client;
+  UserController();
 
-  Dio apiClient;
   static ApiService apiService = locator<ApiService>();
-
 }

@@ -1,12 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_boilerplate/models/family_model.dart';
 import 'package:flutter_boilerplate/models/family_invitation_model.dart';
-import 'package:flutter_boilerplate/models/family_model.dart';
+import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/services/api/api_service.dart';
 import 'package:flutter_boilerplate/services/locator.dart';
 
-class FamilyProvider extends ChangeNotifier {
+class FamilyProvider extends BaseProvider {
   final ApiService _apiService = locator<ApiService>();
 
   List<Family> _families = [];
@@ -14,19 +13,16 @@ class FamilyProvider extends ChangeNotifier {
   List<FamilyMember> _members = [];
   List<FamilyInvitation> _invitations = [];
   String? _errorMessage;
-  bool _isLoading = false;
 
   List<Family> get families => _families;
   Family? get selectedFamily => _selectedFamily;
   List<FamilyMember> get members => _members;
   List<FamilyInvitation> get invitations => _invitations;
   String? get errorMessage => _errorMessage;
-  bool get isLoading => _isLoading;
 
   Future<void> fetchFamilies() async {
-    _isLoading = true;
+    setStatus(ViewStatus.Loading);
     _errorMessage = null;
-    notifyListeners();
 
     try {
       _families = await _apiService.getFamilies();
@@ -36,8 +32,7 @@ class FamilyProvider extends ChangeNotifier {
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      setStatus(ViewStatus.Ready);
     }
   }
 
@@ -49,41 +44,38 @@ class FamilyProvider extends ChangeNotifier {
   }
 
   Future<void> selectFamily(int familyId) async {
-    _isLoading = true;
-    notifyListeners();
+    setStatus(ViewStatus.Loading);
     try {
-      // Refetch the specific family to get all details if needed, or find from list
       _selectedFamily = _families.firstWhere((f) => f.id == familyId, orElse: () => _families.first);
       _members = await _apiService.getFamilyMembers(familyId);
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
     } finally {
-      _isLoading = false;
+      setStatus(ViewStatus.Ready);
+    }
   }
 
-  /// Creates a new family and then refetches the list of families.
   Future<bool> createFamily(Map<String, dynamic> familyData, {XFile? image}) async {
+    setStatus(ViewStatus.Loading);
     _errorMessage = null;
     try {
       final newFamily = await _apiService.createFamily(familyData, image: image);
       _families.insert(0, newFamily);
       _selectedFamily = newFamily;
-      notifyListeners();
+      setStatus(ViewStatus.Ready);
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
+      setStatus(ViewStatus.Ready);
+      return false;
     }
   }
 
-  Future<void> createFamily(Map<String, dynamic> familyData) async {
-    // Assuming createFamily will be handled and then list refreshed
-    await _apiService.createFamily(familyData);
-    await fetchFamilies();
-  /// Updates a family with optional image
   Future<bool> updateFamily(int familyId, Map<String, dynamic> familyData, {XFile? image}) async {
+    setStatus(ViewStatus.Loading);
     _errorMessage = null;
     try {
       final updatedFamily = await _apiService.updateFamilyWithImage(familyId, familyData, image: image);
-      // Update in local list
       final index = _families.indexWhere((f) => f.id == familyId);
       if (index != -1) {
         _families[index] = updatedFamily;
@@ -91,53 +83,87 @@ class FamilyProvider extends ChangeNotifier {
       if (_selectedFamily?.id == familyId) {
         _selectedFamily = updatedFamily;
       }
-      notifyListeners();
+      setStatus(ViewStatus.Ready);
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
-      notifyListeners();
+      setStatus(ViewStatus.Ready);
       return false;
     }
   }
 
   Future<bool> joinFamily(String inviteCode) async {
+    setStatus(ViewStatus.Loading);
+    _errorMessage = null;
     try {
-      await _apiService.joinFamily(inviteCode);
-      await fetchFamilies();
+      final family = await _apiService.joinFamily(inviteCode);
+      if (!_families.any((f) => f.id == family.id)) {
+        _families.add(family);
+      }
+      _selectedFamily = family;
+      setStatus(ViewStatus.Ready);
       return true;
     } catch (e) {
-      _errorMessage = e.toString();
-      notifyListeners();
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      setStatus(ViewStatus.Ready);
       return false;
     }
   }
 
   Future<bool> leaveFamily(int familyId) async {
+    setStatus(ViewStatus.Loading);
     try {
       await _apiService.leaveFamily(familyId);
       _families.removeWhere((f) => f.id == familyId);
       if (_selectedFamily?.id == familyId) {
         _selectedFamily = _families.isNotEmpty ? _families.first : null;
       }
-      notifyListeners();
+      setStatus(ViewStatus.Ready);
       return true;
     } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      setStatus(ViewStatus.Ready);
       return false;
     }
   }
 
-  /// Deletes the family image
   Future<bool> deleteImage(int familyId) async {
-    _errorMessage = null;
+    setStatus(ViewStatus.Loading);
     try {
       final updatedFamily = await _apiService.deleteFamilyImage(familyId);
-      // Update in local list
       final index = _families.indexWhere((f) => f.id == familyId);
       if (index != -1) {
         _families[index] = updatedFamily;
       }
       if (_selectedFamily?.id == familyId) {
         _selectedFamily = updatedFamily;
+      }
+      setStatus(ViewStatus.Ready);
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      setStatus(ViewStatus.Ready);
+      return false;
+    }
+  }
+
+  Future<void> fetchInvitations() async {
+    try {
+      _invitations = await _apiService.getFamilyInvitations();
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  Future<bool> respondToInvitation(int invitationId, bool accept) async {
+    _errorMessage = null;
+    try {
+      await _apiService.respondToFamilyInvitation(invitationId, accept);
+      _invitations.removeWhere((inv) => inv.id == invitationId);
+      if (accept) {
+        await fetchFamilies();
       }
       notifyListeners();
       return true;
@@ -151,29 +177,5 @@ class FamilyProvider extends ChangeNotifier {
   void clearError() {
     _errorMessage = null;
     notifyListeners();
-  }
-
-  // --- Family Invitations ---
-  Future<void> fetchInvitations() async {
-    try {
-      _invitations = await _apiService.getFamilyInvitations();
-      notifyListeners();
-    } catch (e) {
-      // silent fail is ok
-    }
-  }
-
-  Future<bool> respondToInvitation(int invitationId, bool accept) async {
-    try {
-      await _apiService.respondToFamilyInvitation(invitationId, accept);
-      _invitations.removeWhere((inv) => inv.id == invitationId);
-      if (accept) {
-        await fetchFamilies();
-      }
-      notifyListeners();
-      return true;
-    } catch (e) {
-      return false;
-    }
   }
 }
