@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter_boilerplate/models/product_model.dart';
 
 part 'fridge_item.g.dart';
 
@@ -35,6 +36,7 @@ class FridgeItem {
   final bool isExpiringSoon;
   final bool isExpired;
   final int? daysUntilExpiration;
+  final List<Category>? categories;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -52,6 +54,7 @@ class FridgeItem {
     required this.isExpiringSoon,
     required this.isExpired,
     this.daysUntilExpiration,
+    this.categories,
     required this.createdAt,
     required this.updatedAt,
   });

@@ -18,6 +18,8 @@ class FridgePage extends StatefulWidget {
 
 class _FridgePageState extends State<FridgePage> {
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -41,6 +43,7 @@ class _FridgePageState extends State<FridgePage> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -65,10 +68,15 @@ class _FridgePageState extends State<FridgePage> {
         children: [
           if (familyProvider.families.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(12.0, 8.0, 12.0, 4.0),
               child: DropdownButtonFormField<Family>(
                 value: selectedFamily,
-                decoration: const InputDecoration(labelText: 'Chọn nhóm gia đình', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'Nhóm gia đình',
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  isDense: true,
+                ),
                 items: familyProvider.families.map((Family family) {
                   return DropdownMenuItem<Family>(value: family, child: Text(family.name));
                 }).toList(),
@@ -87,7 +95,12 @@ class _FridgePageState extends State<FridgePage> {
           // Cảnh báo hết hạn
           if (selectedFamily != null)
             _buildExpiryWarningBanner(context),
-          // Thanh sắp xếp
+          // Thanh tìm kiếm
+          if (selectedFamily != null)
+            _buildSearchBar(context),
+          // Thanh chọn ngăn và sắp xếp
+          if (selectedFamily != null)
+            _buildLocationFilterBar(context),
           if (selectedFamily != null)
             _buildSortBar(context),
           Expanded(
@@ -105,34 +118,34 @@ class _FridgePageState extends State<FridgePage> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.group, size: 18, color: Colors.grey),
-              const SizedBox(width: 8),
+              const Icon(Icons.group, size: 16, color: Colors.grey),
+              const SizedBox(width: 6),
               Text(
                 'Thành viên (${members.length})',
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
               ),
               const Spacer(),
               TextButton.icon(
                 onPressed: () => _showMembersDialog(context, members),
-                icon: const Icon(Icons.info_outline, size: 16),
-                label: const Text('Chi tiết', style: TextStyle(fontSize: 12)),
+                icon: const Icon(Icons.info_outline, size: 14),
+                label: const Text('Chi tiết', style: TextStyle(fontSize: 11)),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           SizedBox(
-            height: 56,
+            height: 48,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: members.length,
@@ -215,15 +228,15 @@ class _FridgePageState extends State<FridgePage> {
           ExpiryNotificationService.getSeverity(item) == 'warning').length;
 
         return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.all(12),
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: critical > 0 
                   ? [Colors.red[50]!, Colors.red[100]!]
                   : [Colors.orange[50]!, Colors.orange[100]!],
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: critical > 0 ? Colors.red[300]! : Colors.orange[300]!,
               width: 1.5,
@@ -242,9 +255,9 @@ class _FridgePageState extends State<FridgePage> {
                 Icon(
                   critical > 0 ? Icons.error_outline : Icons.warning_amber_rounded,
                   color: critical > 0 ? Colors.red[700] : Colors.orange[700],
-                  size: 32,
+                  size: 26,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,15 +266,15 @@ class _FridgePageState extends State<FridgePage> {
                         critical > 0 ? '⚠️ Cảnh báo khẩn cấp!' : '⏰ Thông báo hết hạn',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 15,
+                          fontSize: 13,
                           color: critical > 0 ? Colors.red[900] : Colors.orange[900],
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         ExpiryNotificationService.getSummaryMessage(items),
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 11,
                           color: critical > 0 ? Colors.red[800] : Colors.orange[800],
                         ),
                       ),
@@ -271,10 +284,104 @@ class _FridgePageState extends State<FridgePage> {
                 Icon(
                   Icons.arrow_forward_ios,
                   color: critical > 0 ? Colors.red[700] : Colors.orange[700],
-                  size: 16,
+                  size: 14,
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value.toLowerCase();
+          });
+        },
+        decoration: InputDecoration(
+          hintText: 'Tìm kiếm thực phẩm...',
+          hintStyle: const TextStyle(fontSize: 12),
+          prefixIcon: const Icon(Icons.search, size: 18),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Colors.grey[100],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          isDense: true,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLocationFilterBar(BuildContext context) {
+    return Consumer<FridgeProvider>(
+      builder: (context, provider, child) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+          child: Row(
+            children: [
+              const Icon(Icons.kitchen, size: 16, color: Colors.grey),
+              const SizedBox(width: 6),
+              const Text('Ngăn:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _SortChip(
+                        label: 'Tất cả',
+                        icon: Icons.grid_view,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.all,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.all),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Ngăn đông',
+                        icon: Icons.ac_unit,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.freezer,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.freezer),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Ngăn mát',
+                        icon: Icons.kitchen,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.cooler,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.cooler),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Kệ bếp',
+                        icon: Icons.shelves,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.pantry,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.pantry),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -285,13 +392,13 @@ class _FridgePageState extends State<FridgePage> {
     return Consumer<FridgeProvider>(
       builder: (context, provider, child) {
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
           child: Row(
             children: [
-              const Icon(Icons.sort, size: 20, color: Colors.grey),
+              const Icon(Icons.sort, size: 16, color: Colors.grey),
+              const SizedBox(width: 6),
+              const Text('Sắp xếp:', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12)),
               const SizedBox(width: 8),
-              const Text('Sắp xếp:', style: TextStyle(fontWeight: FontWeight.w500)),
-              const SizedBox(width: 12),
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -324,13 +431,6 @@ class _FridgePageState extends State<FridgePage> {
                         isSelected: provider.currentSort == FridgeSortType.nameZA,
                         onTap: () => provider.setSort(FridgeSortType.nameZA),
                       ),
-                      const SizedBox(width: 8),
-                      _SortChip(
-                        label: 'Theo ngăn',
-                        icon: Icons.kitchen,
-                        isSelected: provider.currentSort == FridgeSortType.byLocation,
-                        onTap: () => provider.setSort(FridgeSortType.byLocation),
-                      ),
                     ],
                   ),
                 ),
@@ -355,60 +455,44 @@ class _FridgePageState extends State<FridgePage> {
           return const Center(child: Text('Tủ lạnh trống!'));
         }
 
-        final sortedItems = provider.sortedItems;
-        final bool isByLocation = provider.currentSort == FridgeSortType.byLocation;
+        // Áp dụng search filter
+        var sortedItems = provider.sortedItems;
+        if (_searchQuery.isNotEmpty) {
+          sortedItems = sortedItems.where((item) {
+            return item.productName.toLowerCase().contains(_searchQuery) ||
+                   (item.customProductName?.toLowerCase().contains(_searchQuery) ?? false);
+          }).toList();
+        }
+
+        // Hiển thị empty state nếu không tìm thấy
+        if (sortedItems.isEmpty && _searchQuery.isNotEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search_off, size: 48, color: Colors.grey[400]),
+                const SizedBox(height: 12),
+                Text(
+                  'Không tìm thấy "$_searchQuery"',
+                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                ),
+              ],
+            ),
+          );
+        }
 
         return RefreshIndicator(
           onRefresh: () => provider.fetchFridgeItems(selectedFamily.id, isRefresh: true),
-          child: isByLocation
-              ? _buildGroupedByLocationList(sortedItems, provider)
-              : ListView.builder(
-                  controller: _scrollController,
-                  itemCount: sortedItems.length + (provider.isLoadingMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == sortedItems.length) {
-                      return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
-                    }
-                    return FridgeListItem(item: sortedItems[index]);
-                  },
-                ),
-        );
-      },
-    );
-  }
-
-  Widget _buildGroupedByLocationList(List<FridgeItem> items, FridgeProvider provider) {
-    final Map<String, List<FridgeItem>> grouped = {};
-    for (var item in items) {
-      final location = item.location.toUpperCase();
-      grouped.putIfAbsent(location, () => []).add(item);
-    }
-
-    final locationOrder = ['FREEZER', 'COOLER', 'PANTRY'];
-    final sortedLocations = grouped.keys.toList()
-      ..sort((a, b) {
-        final indexA = locationOrder.indexOf(a);
-        final indexB = locationOrder.indexOf(b);
-        return (indexA == -1 ? 999 : indexA).compareTo(indexB == -1 ? 999 : indexB);
-      });
-
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: sortedLocations.length + (provider.isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == sortedLocations.length) {
-          return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
-        }
-
-        final location = sortedLocations[index];
-        final locationItems = grouped[location]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _LocationHeader(location: location, itemCount: locationItems.length),
-            ...locationItems.map((item) => FridgeListItem(item: item)),
-          ],
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: sortedItems.length + (provider.isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == sortedItems.length) {
+                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+              }
+              return FridgeListItem(item: sortedItems[index]);
+            },
+          ),
         );
       },
     );
@@ -433,115 +517,30 @@ class _SortChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: isSelected ? Theme.of(context).primaryColor : Colors.grey[200],
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 16,
+              size: 14,
               color: isSelected ? Colors.white : Colors.grey[700],
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 3),
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: isSelected ? Colors.white : Colors.grey[700],
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _LocationHeader extends StatelessWidget {
-  final String location;
-  final int itemCount;
-
-  const _LocationHeader({required this.location, required this.itemCount});
-
-  String _getLocationName() {
-    switch (location) {
-      case 'FREEZER':
-        return 'Ngăn đông';
-      case 'COOLER':
-        return 'Ngăn mát';
-      case 'PANTRY':
-        return 'Kệ bếp';
-      default:
-        return location;
-    }
-  }
-
-  IconData _getLocationIcon() {
-    switch (location) {
-      case 'FREEZER':
-        return Icons.ac_unit;
-      case 'COOLER':
-        return Icons.kitchen;
-      case 'PANTRY':
-        return Icons.shelves;
-      default:
-        return Icons.inventory_2;
-    }
-  }
-
-  Color _getLocationColor() {
-    switch (location) {
-      case 'FREEZER':
-        return Colors.blue;
-      case 'COOLER':
-        return Colors.teal;
-      case 'PANTRY':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: _getLocationColor().withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _getLocationColor().withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(_getLocationIcon(), color: _getLocationColor(), size: 22),
-          const SizedBox(width: 10),
-          Text(
-            _getLocationName(),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: _getLocationColor(),
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getLocationColor(),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$itemCount món',
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -605,9 +604,10 @@ class FridgeListItem extends StatelessWidget {
     final isWarning = severity == 'warning';
     
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+      elevation: 1,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(10.0),
         side: BorderSide(
           color: isCritical 
               ? Colors.red.withOpacity(0.5)
@@ -623,18 +623,18 @@ class FridgeListItem extends StatelessWidget {
               ? Colors.orange[50]
               : Colors.white,
       child: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(10.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Banner cảnh báo hết hạn nếu cần
             if (isCritical || isWarning)
               Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isCritical ? Colors.red : Colors.orange,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(5),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -642,9 +642,9 @@ class FridgeListItem extends StatelessWidget {
                     Icon(
                       isCritical ? Icons.error_outline : Icons.warning_amber_rounded,
                       color: Colors.white,
-                      size: 16,
+                      size: 13,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         isCritical 
@@ -652,7 +652,7 @@ class FridgeListItem extends StatelessWidget {
                             : 'Sắp hết hạn trong ${item.daysUntilExpiration} ngày',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -664,33 +664,38 @@ class FridgeListItem extends StatelessWidget {
             Row(
               children: [
                 CircleAvatar(
+                  radius: 18,
                   backgroundColor: _getStatusColor().withOpacity(0.1),
-                  child: Icon(_getLocationIcon(), color: _getStatusColor()),
+                  child: Icon(_getLocationIcon(), color: _getStatusColor(), size: 18),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         item.productName,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Số lượng: ${item.quantity} ${item.unit}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                        '${item.quantity} ${item.unit}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () => context.read<FridgeProvider>().deleteItem(item.id),
                 ),
               ],
             ),
-            const Divider(height: 16),
+            const Divider(height: 12, thickness: 0.5),
             // Chi tiết: Vị trí, Hạn sử dụng, Tình trạng
             Row(
               children: [
@@ -745,21 +750,23 @@ class _InfoChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Icon(icon, size: 18, color: Colors.grey[500]),
-        const SizedBox(height: 4),
+        Icon(icon, size: 14, color: Colors.grey[500]),
+        const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          style: TextStyle(fontSize: 9, color: Colors.grey[500]),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           value,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 10,
             fontWeight: FontWeight.w600,
             color: valueColor ?? Colors.black87,
           ),
           textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -778,8 +785,8 @@ class _MemberAvatar extends StatelessWidget {
     return Tooltip(
       message: '${member.fullName}${isLeader ? ' (Trưởng nhóm)' : ''}',
       child: SizedBox(
-        width: 50,
-        height: 54,
+        width: 44,
+        height: 48,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -787,7 +794,7 @@ class _MemberAvatar extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 CircleAvatar(
-                  radius: 16,
+                  radius: 14,
                   backgroundImage: member.avatarUrl != null ? NetworkImage(member.avatarUrl!) : null,
                   backgroundColor: isLeader ? Colors.orange[100] : Colors.blue[100],
                   child: member.avatarUrl == null
@@ -795,7 +802,7 @@ class _MemberAvatar extends StatelessWidget {
                           member.fullName[0].toUpperCase(),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 11,
                             color: isLeader ? Colors.orange[800] : Colors.blue[800],
                           ),
                         )
@@ -806,12 +813,12 @@ class _MemberAvatar extends StatelessWidget {
                     right: -2,
                     bottom: -2,
                     child: Container(
-                      padding: const EdgeInsets.all(2),
+                      padding: const EdgeInsets.all(1.5),
                       decoration: const BoxDecoration(
                         color: Colors.orange,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.star, size: 8, color: Colors.white),
+                      child: const Icon(Icons.star, size: 7, color: Colors.white),
                     ),
                   ),
               ],
@@ -819,7 +826,7 @@ class _MemberAvatar extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               member.nickname ?? member.fullName.split(' ').last,
-              style: const TextStyle(fontSize: 10),
+              style: const TextStyle(fontSize: 9),
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               maxLines: 1,

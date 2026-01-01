@@ -8,9 +8,9 @@ part of 'fridge_statistics.dart';
 
 FridgeStatistics _$FridgeStatisticsFromJson(Map<String, dynamic> json) =>
     FridgeStatistics(
-      totalItems: (json['totalItems'] as num?)?.toInt() ?? 0,
-      expiringSoonItems: (json['expiringSoonCount'] as num?)?.toInt() ?? 0,
-      expiredItems: (json['expiredCount'] as num?)?.toInt() ?? 0,
+      totalItems: (json['totalItems'] as num).toInt(),
+      expiringSoonItems: (json['expiringSoonCount'] as num).toInt(),
+      expiredItems: (json['expiredCount'] as num).toInt(),
       itemsByLocation: (json['itemsByLocation'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toInt()),
       ),

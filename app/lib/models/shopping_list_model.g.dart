@@ -19,10 +19,10 @@ ShoppingList _$ShoppingListFromJson(Map<String, dynamic> json) => ShoppingList(
           : UserInfo.fromJson(json['createdBy'] as Map<String, dynamic>),
       createdAt: json['createdAt'] == null
           ? null
-          : DateTime.tryParse(json['createdAt'].toString()),
+          : DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] == null
           ? null
-          : DateTime.tryParse(json['updatedAt'].toString()),
+          : DateTime.parse(json['updatedAt'] as String),
       items: (json['items'] as List<dynamic>?)
           ?.map((e) => ShoppingItem.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -54,11 +54,11 @@ const _$ShoppingListStatusEnumMap = {
 
 ShoppingItem _$ShoppingItemFromJson(Map<String, dynamic> json) => ShoppingItem(
       id: (json['id'] as num).toInt(),
-      name: (json['productName'] ?? json['name'] ?? 'Unknown') as String,
+      name: json['productName'] as String,
       quantity: (json['quantity'] as num).toDouble(),
-      unit: (json['unit'] ?? '') as String,
+      unit: json['unit'] as String,
       note: json['note'] as String?,
-      isBought: json['isBought'] as bool? ?? false,
+      isBought: json['isBought'] as bool,
       assignedTo: json['assignedTo'] == null
           ? null
           : UserInfo.fromJson(json['assignedTo'] as Map<String, dynamic>),
@@ -67,7 +67,7 @@ ShoppingItem _$ShoppingItemFromJson(Map<String, dynamic> json) => ShoppingItem(
           : UserInfo.fromJson(json['boughtBy'] as Map<String, dynamic>),
       boughtAt: json['boughtAt'] == null
           ? null
-          : DateTime.tryParse(json['boughtAt'].toString()),
+          : DateTime.parse(json['boughtAt'] as String),
       productId: (json['productId'] as num?)?.toInt(),
       productImageUrl: json['productImageUrl'] as String?,
       version: (json['version'] as num?)?.toInt(),

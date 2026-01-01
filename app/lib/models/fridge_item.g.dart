@@ -34,6 +34,9 @@ FridgeItem _$FridgeItemFromJson(Map<String, dynamic> json) => FridgeItem(
       isExpiringSoon: json['isExpiringSoon'] as bool,
       isExpired: json['isExpired'] as bool,
       daysUntilExpiration: (json['daysUntilExpiration'] as num?)?.toInt(),
+      categories: (json['categories'] as List<dynamic>?)
+          ?.map((e) => Category.fromJson(e as Map<String, dynamic>))
+          .toList(),
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
@@ -53,6 +56,7 @@ Map<String, dynamic> _$FridgeItemToJson(FridgeItem instance) =>
       'isExpiringSoon': instance.isExpiringSoon,
       'isExpired': instance.isExpired,
       'daysUntilExpiration': instance.daysUntilExpiration,
+      'categories': instance.categories,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
     };
