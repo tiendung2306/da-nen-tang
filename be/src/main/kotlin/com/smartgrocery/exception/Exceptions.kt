@@ -77,6 +77,9 @@ enum class ErrorCode(val code: Int, val message: String) {
     INVALID_FILE_TYPE(2202, "Invalid file type"),
     FILE_TOO_LARGE(2203, "File is too large"),
 
+    // Notification errors (2300-2399)
+    NOTIFICATION_NOT_FOUND(2300, "Notification not found"),
+
     // Server errors (5000+)
     INTERNAL_ERROR(5000, "Internal server error")
 }
