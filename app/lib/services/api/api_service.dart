@@ -35,10 +35,26 @@ class ApiService {
   factory ApiService() => _instance;
 
   Exception _handleDioError(DioException e) {
+    print('DioException occurred:');
+    print('  Status Code: ${e.response?.statusCode}');
+    print('  Response Data: ${e.response?.data}');
+    print('  Error Message: ${e.message}');
+    print('  Error Type: ${e.type}');
+    
     if (e.response?.data != null && e.response!.data is Map) {
-      return Exception(e.response!.data['message'] ?? 'An unknown API error occurred');
+      final message = e.response!.data['message'] ?? 'An unknown API error occurred';
+      return Exception('$message (Status: ${e.response?.statusCode})');
     }
-    return Exception('Failed to connect to the server.');
+    
+    if (e.response?.statusCode == 500) {
+      return Exception('Server Error (500): Backend encountered an internal error. Check server logs.');
+    }
+    
+    if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+      return Exception('Unauthorized (${e.response?.statusCode}): Please login again.');
+    }
+    
+    return Exception('Failed to connect to the server: ${e.message}');
   }
 
   // --- Auth & User ---

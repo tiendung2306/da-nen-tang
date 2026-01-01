@@ -76,7 +76,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 label: const Text('Tất cả'),
                 selected: !provider.showUnreadOnly,
                 onSelected: (_) => provider.setShowUnreadOnly(false),
-                selectedColor: const Color(0xFFF26F21).withOpacity(0.2),
+                selectedColor: const Color(0xFFF26F21).withValues(alpha: 0.2),
                 checkmarkColor: const Color(0xFFF26F21),
               ),
               const SizedBox(width: 8),
@@ -84,7 +84,7 @@ class _NotificationPageState extends State<NotificationPage> {
                 label: Text('Chưa đọc (${provider.unreadCount})'),
                 selected: provider.showUnreadOnly,
                 onSelected: (_) => provider.setShowUnreadOnly(true),
-                selectedColor: const Color(0xFFF26F21).withOpacity(0.2),
+                selectedColor: const Color(0xFFF26F21).withValues(alpha: 0.2),
                 checkmarkColor: const Color(0xFFF26F21),
               ),
             ],
@@ -103,18 +103,47 @@ class _NotificationPageState extends State<NotificationPage> {
 
         if (provider.error != null && provider.notifications.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
-                const SizedBox(height: 16),
-                Text('Đã xảy ra lỗi', style: TextStyle(color: Colors.grey[600])),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: () => provider.refresh(),
-                  child: const Text('Thử lại'),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Đã xảy ra lỗi',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red[200]!),
+                    ),
+                    child: Text(
+                      provider.error!,
+                      style: TextStyle(color: Colors.grey[800]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => provider.refresh(),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Thử lại'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF26F21),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }
@@ -312,7 +341,7 @@ class _NotificationPageState extends State<NotificationPage> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         shape: BoxShape.circle,
       ),
       child: Icon(icon, color: color, size: 24),

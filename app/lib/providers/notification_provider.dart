@@ -58,12 +58,40 @@ class NotificationProvider extends ChangeNotifier {
       if (_hasMore) _currentPage++;
 
       _isLoading = false;
+      _error = null;
       notifyListeners();
     } catch (e) {
-      _error = e.toString();
+      _error = _extractErrorMessage(e);
       _isLoading = false;
       notifyListeners();
+      print('Notification fetch error: $e');
     }
+  }
+
+  String _extractErrorMessage(dynamic error) {
+    final errorString = error.toString();
+    
+    // Check if it's a DioException with 500 error
+    if (errorString.contains('500')) {
+      return 'Lỗi server. Vui lòng kiểm tra:\n'
+          '• Backend server đã chạy chưa?\n'
+          '• Endpoint /api/v1/notifications có hoạt động?\n'
+          '• Database connection có ổn?';
+    }
+    
+    // Check if it's a DioException with 401/403
+    if (errorString.contains('401') || errorString.contains('403')) {
+      return 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+    }
+    
+    // Check if it's a connection error
+    if (errorString.contains('SocketException') || errorString.contains('Failed to connect')) {
+      return 'Không thể kết nối đến server. Kiểm tra:\n'
+          '• Backend có đang chạy không?\n'
+          '• URL có đúng không? (http://127.0.0.1:8080)';
+    }
+    
+    return errorString;
   }
 
   Future<void> fetchCount() async {
