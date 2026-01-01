@@ -9,15 +9,12 @@ part of 'fridge_statistics.dart';
 FridgeStatistics _$FridgeStatisticsFromJson(Map<String, dynamic> json) =>
     FridgeStatistics(
       totalItems: (json['totalItems'] as num?)?.toInt() ?? 0,
-      activeItems: (json['activeItems'] as num?)?.toInt() ?? 0,
-      expiringSoonItems: (json['expiringSoonItems'] as num?)?.toInt() ?? 0,
-      expiredItems: (json['expiredItems'] as num?)?.toInt() ?? 0,
-      consumedItems: (json['consumedItems'] as num?)?.toInt() ?? 0,
-      discardedItems: (json['discardedItems'] as num?)?.toInt() ?? 0,
+      expiringSoonItems: (json['expiringSoonCount'] as num?)?.toInt() ?? 0,
+      expiredItems: (json['expiredCount'] as num?)?.toInt() ?? 0,
       itemsByLocation: (json['itemsByLocation'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toInt()),
       ),
-      itemsByCategory: (json['itemsByCategory'] as Map<String, dynamic>?)?.map(
+      itemsByCategory: (json['itemsByStatus'] as Map<String, dynamic>?)?.map(
         (k, e) => MapEntry(k, (e as num).toInt()),
       ),
     );
@@ -25,11 +22,8 @@ FridgeStatistics _$FridgeStatisticsFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$FridgeStatisticsToJson(FridgeStatistics instance) =>
     <String, dynamic>{
       'totalItems': instance.totalItems,
-      'activeItems': instance.activeItems,
-      'expiringSoonItems': instance.expiringSoonItems,
-      'expiredItems': instance.expiredItems,
-      'consumedItems': instance.consumedItems,
-      'discardedItems': instance.discardedItems,
+      'expiringSoonCount': instance.expiringSoonItems,
+      'expiredCount': instance.expiredItems,
       'itemsByLocation': instance.itemsByLocation,
-      'itemsByCategory': instance.itemsByCategory,
+      'itemsByStatus': instance.itemsByCategory,
     };

@@ -158,6 +158,19 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Widget _buildNotificationItem(NotificationItem notification) {
+    // Xác định màu nền cho thông báo hết hạn
+    Color backgroundColor;
+    if (notification.type == NotificationType.fridgeExpiry && !notification.isRead) {
+      // Thông báo hết hạn chưa đọc - nền đỏ nhạt/cam nhạt
+      if (notification.message.contains('24 giờ') || notification.message.contains('đã hết hạn')) {
+        backgroundColor = const Color(0xFFFFEBEE); // Đỏ nhạt - khẩn cấp
+      } else {
+        backgroundColor = const Color(0xFFFFF3E0); // Cam nhạt - cảnh báo
+      }
+    } else {
+      backgroundColor = notification.isRead ? Colors.white : const Color(0xFFFFF3E0);
+    }
+
     return Dismissible(
       key: Key('notification_${notification.id}'),
       direction: DismissDirection.endToStart,
@@ -172,7 +185,7 @@ class _NotificationPageState extends State<NotificationPage> {
         onTap: () => _handleNotificationTap(notification),
         onLongPress: () => _showNotificationOptions(notification),
         child: Container(
-          color: notification.isRead ? Colors.white : const Color(0xFFFFF3E0),
+          color: backgroundColor,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,6 +204,10 @@ class _NotificationPageState extends State<NotificationPage> {
                             style: TextStyle(
                               fontWeight: notification.isRead ? FontWeight.normal : FontWeight.bold,
                               fontSize: 15,
+                              color: notification.type == NotificationType.fridgeExpiry && 
+                                     (notification.message.contains('24 giờ') || notification.message.contains('đã hết hạn'))
+                                  ? Colors.red[800]
+                                  : Colors.black87,
                             ),
                           ),
                         ),
@@ -198,8 +215,10 @@ class _NotificationPageState extends State<NotificationPage> {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF26F21),
+                            decoration: BoxDecoration(
+                              color: notification.type == NotificationType.fridgeExpiry
+                                  ? Colors.red
+                                  : const Color(0xFFF26F21),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -208,14 +227,46 @@ class _NotificationPageState extends State<NotificationPage> {
                     const SizedBox(height: 4),
                     Text(
                       notification.message,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      maxLines: 2,
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                        fontSize: 14,
+                      ),
+                      maxLines: 3,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      timeago.format(notification.createdAt, locale: 'vi'),
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 12, color: Colors.grey[500]),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeago.format(notification.createdAt, locale: 'vi'),
+                          style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                        ),
+                        if (notification.type == NotificationType.fridgeExpiry && !notification.isRead)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: notification.message.contains('24 giờ') || notification.message.contains('đã hết hạn')
+                                    ? Colors.red
+                                    : Colors.orange,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                notification.message.contains('24 giờ') || notification.message.contains('đã hết hạn')
+                                    ? 'KHẨN CẤP'
+                                    : 'CẨN THẬN',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -241,8 +292,9 @@ class _NotificationPageState extends State<NotificationPage> {
         color = Colors.green;
         break;
       case NotificationType.fridgeExpiry:
-        icon = Icons.warning;
-        color = Colors.orange;
+        // Sử dụng icon cảnh báo với màu đỏ/cam cho thông báo hết hạn
+        icon = Icons.warning_amber_rounded;
+        color = Colors.red;
         break;
       case NotificationType.shoppingReminder:
         icon = Icons.shopping_cart;

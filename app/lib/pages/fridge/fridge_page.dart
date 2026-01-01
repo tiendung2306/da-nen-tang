@@ -6,6 +6,8 @@ import 'package:flutter_boilerplate/providers/fridge_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/pages/fridge/add_fridge_item_page.dart';
+import 'package:flutter_boilerplate/services/notification/expiry_notification_service.dart';
+import 'package:flutter_boilerplate/pages/fridge/expiring_items_page.dart';
 
 class FridgePage extends StatefulWidget {
   const FridgePage({Key? key}) : super(key: key);
@@ -82,6 +84,9 @@ class _FridgePageState extends State<FridgePage> {
           // Hiển thị thành viên nhóm
           if (selectedFamily != null)
             _buildMembersBar(context, familyProvider),
+          // Cảnh báo hết hạn
+          if (selectedFamily != null)
+            _buildExpiryWarningBanner(context),
           // Thanh sắp xếp
           if (selectedFamily != null)
             _buildSortBar(context),
@@ -192,6 +197,87 @@ class _FridgePageState extends State<FridgePage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExpiryWarningBanner(BuildContext context) {
+    return Consumer<FridgeProvider>(
+      builder: (context, provider, child) {
+        final items = provider.items;
+        if (items.isEmpty) return const SizedBox.shrink();
+
+        final itemsNeedingNotification = ExpiryNotificationService.getItemsNeedingNotification(items);
+        if (itemsNeedingNotification.isEmpty) return const SizedBox.shrink();
+
+        final critical = itemsNeedingNotification.where((item) => 
+          ExpiryNotificationService.getSeverity(item) == 'critical').length;
+        final warning = itemsNeedingNotification.where((item) => 
+          ExpiryNotificationService.getSeverity(item) == 'warning').length;
+
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: critical > 0 
+                  ? [Colors.red[50]!, Colors.red[100]!]
+                  : [Colors.orange[50]!, Colors.orange[100]!],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: critical > 0 ? Colors.red[300]! : Colors.orange[300]!,
+              width: 1.5,
+            ),
+          ),
+          child: InkWell(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ExpiringItemsPage(),
+                ),
+              );
+            },
+            child: Row(
+              children: [
+                Icon(
+                  critical > 0 ? Icons.error_outline : Icons.warning_amber_rounded,
+                  color: critical > 0 ? Colors.red[700] : Colors.orange[700],
+                  size: 32,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        critical > 0 ? '⚠️ Cảnh báo khẩn cấp!' : '⏰ Thông báo hết hạn',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: critical > 0 ? Colors.red[900] : Colors.orange[900],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        ExpiryNotificationService.getSummaryMessage(items),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: critical > 0 ? Colors.red[800] : Colors.orange[800],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: critical > 0 ? Colors.red[700] : Colors.orange[700],
+                  size: 16,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -513,14 +599,67 @@ class FridgeListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Xác định mức độ cảnh báo
+    final severity = ExpiryNotificationService.getSeverity(item);
+    final isCritical = severity == 'critical';
+    final isWarning = severity == 'warning';
+    
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+        side: BorderSide(
+          color: isCritical 
+              ? Colors.red.withOpacity(0.5)
+              : isWarning 
+                  ? Colors.orange.withOpacity(0.5)
+                  : Colors.transparent,
+          width: isCritical ? 2 : 1.5,
+        ),
+      ),
+      color: isCritical 
+          ? Colors.red[50]
+          : isWarning 
+              ? Colors.orange[50]
+              : Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Banner cảnh báo hết hạn nếu cần
+            if (isCritical || isWarning)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isCritical ? Colors.red : Colors.orange,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isCritical ? Icons.error_outline : Icons.warning_amber_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        isCritical 
+                            ? 'SẮP HẾT HẠN TRONG 24 GIỜ!' 
+                            : 'Sắp hết hạn trong ${item.daysUntilExpiration} ngày',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             // Header: Tên và nút xóa
             Row(
               children: [
