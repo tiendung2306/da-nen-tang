@@ -75,4 +75,10 @@ class RecipeProvider extends BaseProvider {
     // Notify listeners to update the UI with the new list.
     notifyListeners();
   }
+
+  Future<void> deleteRecipe(int id) async {
+    await _apiService.deleteRecipe(id);
+    _recipes.removeWhere((recipe) => recipe.id == id);
+    notifyListeners();
+  }
 }

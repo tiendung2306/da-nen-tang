@@ -33,13 +33,7 @@ Recipe _$RecipeFromJson(Map<String, dynamic> json) => Recipe(
       createdBy: UserSimpleResponse.fromJson(
           json['createdBy'] as Map<String, dynamic>),
       createdAt: json['createdAt'] as String,
-      ingredients: (json['ingredients'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-      steps:
-          (json['steps'] as List<dynamic>?)?.map((e) => e as String).toList(),
-      notes:
-          (json['notes'] as List<dynamic>?)?.map((e) => e as String).toList(),
+      instructions: json['instructions'] as String?,
     );
 
 Map<String, dynamic> _$RecipeToJson(Recipe instance) => <String, dynamic>{
@@ -54,9 +48,7 @@ Map<String, dynamic> _$RecipeToJson(Recipe instance) => <String, dynamic>{
       'isPublic': instance.isPublic,
       'createdBy': instance.createdBy,
       'createdAt': instance.createdAt,
-      'ingredients': instance.ingredients,
-      'steps': instance.steps,
-      'notes': instance.notes,
+      'instructions': instance.instructions,
     };
 
 const _$DifficultyEnumMap = {

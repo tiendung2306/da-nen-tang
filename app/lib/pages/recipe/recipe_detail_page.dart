@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/providers/recipe_provider.dart';
+import 'package:flutter_boilerplate/providers/auth_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/models/recipe_model.dart';
 
@@ -26,7 +27,44 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar( /* ... */ ),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              final currentUser = authProvider.userInfo;
+              final isOwner = currentUser != null && currentUser.id == widget.recipe.createdBy.id;
+              
+              if (!isOwner) return const SizedBox.shrink();
+              
+              return PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'delete') {
+                    _confirmDelete();
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete, color: Colors.red, size: 20),
+                        SizedBox(width: 8),
+                        Text('Xóa công thức', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
       body: Consumer<RecipeProvider>(
         builder: (context, recipeProvider, child) {
           final recipeToDisplay = recipeProvider.selectedRecipe ?? widget.recipe;
@@ -40,18 +78,82 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ... (Avatar)
+                Center(
+                  child: recipeToDisplay.imageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            recipeToDisplay.imageUrl!,
+                            width: 200,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stack) => Container(
+                              width: 200,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0F0F0),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(Icons.restaurant, size: 80, color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF0F0F0),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.restaurant, size: 80, color: Colors.grey),
+                        ),
+                ),
                 const SizedBox(height: 24),
-                Center(child: Text(recipeToDisplay.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24))),
+                Center(child: Text(recipeToDisplay.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 24), textAlign: TextAlign.center)),
+                const SizedBox(height: 8),
+                Center(
+                  child: Text(
+                    'bởi ${recipeToDisplay.createdBy.fullName}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (recipeToDisplay.description.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      recipeToDisplay.description,
+                      style: TextStyle(fontSize: 15, color: Colors.grey[700], height: 1.5),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildInfoCard(Icons.people, 'Phần ăn', '${recipeToDisplay.serves ?? 0}'),
+                    _buildInfoCard(Icons.schedule, 'Chuẩn bị', '${recipeToDisplay.prepTime ?? 0} ph'),
+                    _buildInfoCard(Icons.timer, 'Nấu', '${recipeToDisplay.cookTime ?? 0} ph'),
+                    _buildDifficultyCard(recipeToDisplay.difficulty),
+                  ],
+                ),
                 const SizedBox(height: 24),
-                _buildSectionTitle('Danh sách nguyên liệu'),
+                _buildSectionTitle('Danh sách nguyên liệu', Icons.shopping_basket),
+                const SizedBox(height: 8),
                 _buildBulletList(recipeToDisplay.ingredients ?? []),
-                const Divider(height: 32),
-                _buildSectionTitle('Cách làm'),
+                const Divider(height: 40, thickness: 1),
+                _buildSectionTitle('Cách làm', Icons.format_list_numbered),
+                const SizedBox(height: 8),
                 _buildBulletList(recipeToDisplay.steps ?? [], isNumbered: true),
-                const Divider(height: 32),
-                _buildSectionTitle('Ghi chú'),
-                _buildBulletList(recipeToDisplay.notes ?? []),
+                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
+                  const Divider(height: 40, thickness: 1),
+                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
+                  _buildSectionTitle('Ghi chú', Icons.note),
+                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
+                  const SizedBox(height: 8),
+                if (recipeToDisplay.notes != null && recipeToDisplay.notes!.isNotEmpty)
+                  _buildBulletList(recipeToDisplay.notes!),
+                const SizedBox(height: 24),
               ],
             ),
           );
@@ -60,7 +162,15 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) { return Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)); }
+  Widget _buildSectionTitle(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: const Color(0xFFF26F21), size: 24),
+        const SizedBox(width: 8),
+        Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+      ],
+    );
+  }
 
   Widget _buildBulletList(List<String> items, {bool isNumbered = false}) {
     return Padding(
@@ -73,6 +183,99 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
             child: Text(isNumbered ? '${entry.key + 1}. ${entry.value}' : '• ${entry.value}', style: const TextStyle(fontSize: 16, height: 1.5)),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFFF26F21), size: 24),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDifficultyCard(Difficulty difficulty) {
+    Color color;
+    String label;
+    IconData icon;
+    switch (difficulty) {
+      case Difficulty.EASY:
+        color = Colors.green;
+        label = 'Dễ';
+        icon = Icons.sentiment_satisfied;
+        break;
+      case Difficulty.MEDIUM:
+        color = Colors.orange;
+        label = 'Trung bình';
+        icon = Icons.sentiment_neutral;
+        break;
+      case Difficulty.HARD:
+        color = Colors.red;
+        label = 'Khó';
+        icon = Icons.sentiment_very_dissatisfied;
+        break;
+    }
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: 2),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 4),
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: color)),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDelete() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận xóa'),
+        content: Text('Bạn có chắc muốn xóa công thức "${widget.recipe.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              try {
+                await context.read<RecipeProvider>().deleteRecipe(widget.recipe.id);
+                if (mounted) {
+                  Navigator.pop(context); // Go back to list
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Xóa công thức thành công!'), backgroundColor: Colors.green),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Lỗi: ${e.toString()}'), backgroundColor: Colors.red),
+                  );
+                }
+              }
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

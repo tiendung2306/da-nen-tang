@@ -27,7 +27,6 @@ class Recipe {
   final String title;
   final String description;
   final String? imageUrl;
-  // FIX: Allow numeric fields to be nullable and provide default values.
   final int? serves;
   final int? prepTime;
   final int? cookTime;
@@ -35,10 +34,7 @@ class Recipe {
   final bool isPublic;
   final UserSimpleResponse createdBy;
   final String createdAt;
-
-  final List<String>? ingredients;
-  final List<String>? steps;
-  final List<String>? notes;
+  final String? instructions;
 
   const Recipe({
     required this.id,
@@ -52,10 +48,21 @@ class Recipe {
     required this.isPublic,
     required this.createdBy,
     required this.createdAt,
-    this.ingredients,
-    this.steps,
-    this.notes,
+    this.instructions,
   });
+
+  // Helper getters to parse backend data
+  List<String>? get ingredients {
+    // Backend stores ingredients in separate table, not in instructions
+    return null;
+  }
+
+  List<String>? get steps {
+    if (instructions == null || instructions!.isEmpty) return null;
+    return instructions!.split('\n').where((s) => s.trim().isNotEmpty).toList();
+  }
+
+  List<String>? get notes => null;
 
   factory Recipe.fromJson(Map<String, dynamic> json) => _$RecipeFromJson(json);
   Map<String, dynamic> toJson() => _$RecipeToJson(this);
