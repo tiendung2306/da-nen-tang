@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 import 'package:flutter_boilerplate/providers/auth_provider.dart';
 import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/providers/fridge_provider.dart';
@@ -21,8 +22,30 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadStatistics();
+      final familyProvider = context.read<FamilyProvider>();
+      // Load families first if not loaded
+      if (familyProvider.families.isEmpty) {
+        familyProvider.fetchFamilies().then((_) {
+          _loadStatistics();
+        });
+      } else {
+        _loadStatistics();
+      }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload statistics when family changes
+    final selectedFamily = context.watch<FamilyProvider>().selectedFamily;
+    if (selectedFamily != null) {
+      final fridgeStats = context.read<FridgeProvider>().statistics;
+      // Only fetch if stats are null or stale
+      if (fridgeStats == null) {
+        _loadStatistics();
+      }
+    }
   }
 
   void _loadStatistics() {
@@ -31,6 +54,52 @@ class _HomePageState extends State<HomePage> {
       context.read<FridgeProvider>().fetchStatistics(selectedFamily.id);
       context.read<ShoppingListProvider>().fetchActiveShoppingLists(selectedFamily.id);
     }
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    final random = Random();
+    List<String> greetings;
+    
+    if (hour >= 5 && hour < 12) {
+      // Buổi sáng
+      greetings = [
+        'Chào buổi sáng',
+        'Buổi sáng tốt lành',
+        'Ngày mới vui vẻ',
+        'Chúc bạn ngày mới tràn đầy năng lượng',
+        'Bắt đầu ngày mới thật tuyệt vời',
+      ];
+    } else if (hour >= 12 && hour < 14) {
+      // Buổi trưa
+      greetings = [
+        'Chào buổi trưa',
+        'Buổi trưa vui vẻ',
+        'Chúc bạn bữa trưa ngon miệng',
+        'Nghỉ trưa thư giãn nhé',
+        'Chúc buổi trưa tràn đầy năng lượng',
+      ];
+    } else if (hour >= 14 && hour < 18) {
+      // Buổi chiều
+      greetings = [
+        'Chào buổi chiều',
+        'Buổi chiều vui vẻ',
+        'Chúc bạn buổi chiều năng động',
+        'Chiều tốt lành',
+        'Chúc buổi chiều làm việc hiệu quả',
+      ];
+    } else {
+      // Buổi tối
+      greetings = [
+        'Chào buổi tối',
+        'Buổi tối vui vẻ',
+        'Chúc bạn buổi tối thư giãn',
+        'Buổi tối tốt lành',
+        'Chúc bạn buổi tối ấm áp bên gia đình',
+      ];
+    }
+    
+    return greetings[random.nextInt(greetings.length)];
   }
 
   Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
@@ -167,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Xin chào, ${userInfo.fullName}! 👋',
+                          '${_getGreeting()}, ${userInfo.fullName}! 👋',
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,

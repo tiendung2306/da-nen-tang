@@ -9,6 +9,9 @@ import 'package:intl/intl.dart';
 // FIX: Đổi FRIDGE thành COOLER để khớp với backend
 enum FridgeLocation { FREEZER, COOLER, PANTRY }
 
+// Special category for cooked food
+final Category cookedFoodCategory = Category(id: -1, name: 'Thức ăn đã nấu');
+
 class AddFridgeItemPage extends StatefulWidget {
   const AddFridgeItemPage({Key? key}) : super(key: key);
 
@@ -201,6 +204,10 @@ class _AddFridgeItemPageState extends State<AddFridgeItemPage> {
                   const DropdownMenuItem<Category>(
                     value: null,
                     child: Text('Tất cả danh mục'),
+                  ),
+                  DropdownMenuItem<Category>(
+                    value: cookedFoodCategory,
+                    child: const Text('🍲 Thức ăn đã nấu'),
                   ),
                   ..._availableCategories.map((category) {
                     return DropdownMenuItem<Category>(
