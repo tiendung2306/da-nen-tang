@@ -304,10 +304,17 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     final quantity = double.tryParse(_quantityController.text) ?? 1;
     final unit = _unitController.text.trim();
 
+    if (unit.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập đơn vị (vd: kg, quả, gói...)')),
+      );
+      return;
+    }
+
     final item = CreateShoppingItemRequest(
-      name: name,
+      customProductName: name,
       quantity: quantity,
-      unit: unit.isNotEmpty ? unit : null,
+      unit: unit,
     );
 
     context.read<ShoppingListProvider>().addShoppingItem(widget.shoppingListId, item);
@@ -340,10 +347,10 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   void _handleMenuAction(String action, ShoppingListProvider provider, ShoppingList list) {
     switch (action) {
       case 'start':
-        provider.updateShoppingListStatus(list.id, ShoppingListStatus.SHOPPING);
+        provider.updateShoppingListStatus(list.id, ShoppingListStatus.SHOPPING, version: list.version ?? 0);
         break;
       case 'complete':
-        provider.updateShoppingListStatus(list.id, ShoppingListStatus.COMPLETED);
+        provider.updateShoppingListStatus(list.id, ShoppingListStatus.COMPLETED, version: list.version ?? 0);
         break;
       case 'delete':
         showDialog(

@@ -119,7 +119,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
           ),
           const SizedBox(height: 24),
           _buildInfoRow(label: 'Tên tài khoản', value: userInfo.fullName),
-          _buildInfoRow(label: 'Email', value: userInfo.email),
+          _buildInfoRow(label: 'Email', value: userInfo.email ?? ''),
           const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,

@@ -199,7 +199,8 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
                   child: TextField(
                     controller: unitController,
                     decoration: const InputDecoration(
-                      labelText: 'Đơn vị',
+                      labelText: 'Đơn vị *',
+                      hintText: 'vd: kg, quả, gói...',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -210,9 +211,16 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
             ElevatedButton(
               onPressed: () {
                 final name = nameController.text.trim();
+                final unit = unitController.text.trim();
                 if (name.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Vui lòng nhập tên món')),
+                  );
+                  return;
+                }
+                if (unit.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng nhập đơn vị (vd: kg, quả, gói...)')),
                   );
                   return;
                 }
@@ -220,7 +228,7 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
                   _items.add(_TempItem(
                     name: name,
                     quantity: double.tryParse(quantityController.text) ?? 1,
-                    unit: unitController.text.trim().isEmpty ? null : unitController.text.trim(),
+                    unit: unit,
                   ));
                 });
                 Navigator.pop(context);
@@ -255,7 +263,7 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
 
     final provider = context.read<ShoppingListProvider>();
     final items = _items.map((item) => CreateShoppingItemRequest(
-      name: item.name,
+      customProductName: item.name,
       quantity: item.quantity,
       unit: item.unit,
     )).toList();
@@ -287,7 +295,7 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
 class _TempItem {
   final String name;
   final double quantity;
-  final String? unit;
+  final String unit;
 
-  _TempItem({required this.name, required this.quantity, this.unit});
+  _TempItem({required this.name, required this.quantity, required this.unit});
 }

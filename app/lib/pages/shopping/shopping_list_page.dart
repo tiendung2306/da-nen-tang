@@ -46,16 +46,69 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Đang lập'),
-            Tab(text: 'Đang mua'),
-            Tab(text: 'Hoàn thành'),
-          ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(96),
+          child: Column(
+            children: [
+              // Family selector
+              Consumer<FamilyProvider>(
+                builder: (context, familyProvider, child) {
+                  final families = familyProvider.families;
+                  final selected = familyProvider.selectedFamily;
+                  
+                  if (families.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  return Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: InkWell(
+                      onTap: () => _showFamilyPicker(context, familyProvider),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.group, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                selected?.name ?? 'Chọn nhóm',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.arrow_drop_down, color: Colors.white),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              // Tabs
+              TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                tabs: const [
+                  Tab(text: 'Đang lập'),
+                  Tab(text: 'Đang mua'),
+                  Tab(text: 'Hoàn thành'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
       body: Consumer<ShoppingListProvider>(
@@ -99,6 +152,60 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
         backgroundColor: Colors.green,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+    );
+  }
+
+  void _showFamilyPicker(BuildContext context, FamilyProvider familyProvider) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Chọn nhóm gia đình',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ),
+              const Divider(height: 1),
+              ...familyProvider.families.map((family) {
+                final isSelected = family.id == familyProvider.selectedFamily?.id;
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isSelected ? Colors.green : Colors.grey[300],
+                    child: Icon(
+                      Icons.group,
+                      color: isSelected ? Colors.white : Colors.grey[600],
+                    ),
+                  ),
+                  title: Text(
+                    family.name,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? Colors.green : null,
+                    ),
+                  ),
+                  trailing: isSelected
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : null,
+                  onTap: () {
+                    familyProvider.setSelectedFamily(family);
+                    Navigator.pop(context);
+                    _loadData();
+                  },
+                );
+              }),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
     );
   }
 

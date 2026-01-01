@@ -82,11 +82,12 @@ class ShoppingListProvider extends BaseProvider {
   }
 
   // Update shopping list status
-  Future<void> updateShoppingListStatus(int listId, ShoppingListStatus status) async {
+  Future<void> updateShoppingListStatus(int listId, ShoppingListStatus status, {required int version}) async {
     _errorMessage = null;
     try {
       final updatedList = await _apiService.updateShoppingList(listId, {
         'status': status.name,
+        'version': version,
       });
       final index = _shoppingLists.indexWhere((list) => list.id == listId);
       if (index != -1) {

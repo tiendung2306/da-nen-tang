@@ -18,9 +18,11 @@ class ShoppingList {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final List<ShoppingItem>? items;
+  final int? itemCount;
+  final int? boughtCount;
 
-  int get totalItems => items?.length ?? 0;
-  int get boughtItems => items?.where((item) => item.isBought).length ?? 0;
+  int get totalItems => itemCount ?? items?.length ?? 0;
+  int get boughtItems => boughtCount ?? items?.where((item) => item.isBought).length ?? 0;
   double get progress => totalItems > 0 ? boughtItems / totalItems : 0;
 
   ShoppingList({
@@ -34,6 +36,8 @@ class ShoppingList {
     this.createdAt,
     this.updatedAt,
     this.items,
+    this.itemCount,
+    this.boughtCount,
   });
 
   factory ShoppingList.fromJson(Map<String, dynamic> json) => _$ShoppingListFromJson(json);
@@ -43,9 +47,10 @@ class ShoppingList {
 @JsonSerializable()
 class ShoppingItem {
   final int id;
+  @JsonKey(name: 'productName')
   final String name;
   final double quantity;
-  final String? unit;
+  final String unit;
   final String? note;
   final bool isBought;
   final UserInfo? assignedTo;
@@ -59,7 +64,7 @@ class ShoppingItem {
     required this.id,
     required this.name,
     required this.quantity,
-    this.unit,
+    required this.unit,
     this.note,
     required this.isBought,
     this.assignedTo,
@@ -94,18 +99,18 @@ class CreateShoppingListRequest {
 
 @JsonSerializable()
 class CreateShoppingItemRequest {
-  final String? name;
-  final int? productId;
+  final int? masterProductId;
+  final String? customProductName;
   final double quantity;
-  final String? unit;
+  final String unit;
   final String? note;
   final int? assignedToId;
 
   CreateShoppingItemRequest({
-    this.name,
-    this.productId,
+    this.masterProductId,
+    this.customProductName,
     required this.quantity,
-    this.unit,
+    required this.unit,
     this.note,
     this.assignedToId,
   });

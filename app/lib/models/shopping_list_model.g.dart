@@ -19,13 +19,15 @@ ShoppingList _$ShoppingListFromJson(Map<String, dynamic> json) => ShoppingList(
           : UserInfo.fromJson(json['createdBy'] as Map<String, dynamic>),
       createdAt: json['createdAt'] == null
           ? null
-          : DateTime.parse(json['createdAt'] as String),
+          : DateTime.tryParse(json['createdAt'].toString()),
       updatedAt: json['updatedAt'] == null
           ? null
-          : DateTime.parse(json['updatedAt'] as String),
+          : DateTime.tryParse(json['updatedAt'].toString()),
       items: (json['items'] as List<dynamic>?)
           ?.map((e) => ShoppingItem.fromJson(e as Map<String, dynamic>))
           .toList(),
+      itemCount: (json['itemCount'] as num?)?.toInt(),
+      boughtCount: (json['boughtCount'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$ShoppingListToJson(ShoppingList instance) =>
@@ -40,6 +42,8 @@ Map<String, dynamic> _$ShoppingListToJson(ShoppingList instance) =>
       'createdAt': instance.createdAt?.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'items': instance.items,
+      'itemCount': instance.itemCount,
+      'boughtCount': instance.boughtCount,
     };
 
 const _$ShoppingListStatusEnumMap = {
@@ -50,11 +54,11 @@ const _$ShoppingListStatusEnumMap = {
 
 ShoppingItem _$ShoppingItemFromJson(Map<String, dynamic> json) => ShoppingItem(
       id: (json['id'] as num).toInt(),
-      name: json['name'] as String,
+      name: (json['productName'] ?? json['name'] ?? 'Unknown') as String,
       quantity: (json['quantity'] as num).toDouble(),
-      unit: json['unit'] as String?,
+      unit: (json['unit'] ?? '') as String,
       note: json['note'] as String?,
-      isBought: json['isBought'] as bool,
+      isBought: json['isBought'] as bool? ?? false,
       assignedTo: json['assignedTo'] == null
           ? null
           : UserInfo.fromJson(json['assignedTo'] as Map<String, dynamic>),
@@ -63,7 +67,7 @@ ShoppingItem _$ShoppingItemFromJson(Map<String, dynamic> json) => ShoppingItem(
           : UserInfo.fromJson(json['boughtBy'] as Map<String, dynamic>),
       boughtAt: json['boughtAt'] == null
           ? null
-          : DateTime.parse(json['boughtAt'] as String),
+          : DateTime.tryParse(json['boughtAt'].toString()),
       productId: (json['productId'] as num?)?.toInt(),
       productImageUrl: json['productImageUrl'] as String?,
       version: (json['version'] as num?)?.toInt(),
@@ -72,7 +76,7 @@ ShoppingItem _$ShoppingItemFromJson(Map<String, dynamic> json) => ShoppingItem(
 Map<String, dynamic> _$ShoppingItemToJson(ShoppingItem instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'name': instance.name,
+      'productName': instance.name,
       'quantity': instance.quantity,
       'unit': instance.unit,
       'note': instance.note,
@@ -109,10 +113,10 @@ Map<String, dynamic> _$CreateShoppingListRequestToJson(
 CreateShoppingItemRequest _$CreateShoppingItemRequestFromJson(
         Map<String, dynamic> json) =>
     CreateShoppingItemRequest(
-      name: json['name'] as String?,
-      productId: (json['productId'] as num?)?.toInt(),
+      masterProductId: (json['masterProductId'] as num?)?.toInt(),
+      customProductName: json['customProductName'] as String?,
       quantity: (json['quantity'] as num).toDouble(),
-      unit: json['unit'] as String?,
+      unit: json['unit'] as String,
       note: json['note'] as String?,
       assignedToId: (json['assignedToId'] as num?)?.toInt(),
     );
@@ -120,8 +124,8 @@ CreateShoppingItemRequest _$CreateShoppingItemRequestFromJson(
 Map<String, dynamic> _$CreateShoppingItemRequestToJson(
         CreateShoppingItemRequest instance) =>
     <String, dynamic>{
-      'name': instance.name,
-      'productId': instance.productId,
+      'masterProductId': instance.masterProductId,
+      'customProductName': instance.customProductName,
       'quantity': instance.quantity,
       'unit': instance.unit,
       'note': instance.note,

@@ -144,7 +144,7 @@ class _UserTileState extends State<UserTile> {
         return ListTile(
           leading: CircleAvatar(child: Text(widget.user.name.substring(0, 1))),
           title: Text(widget.user.name),
-          subtitle: Text(widget.user.email),
+          subtitle: Text(widget.user.email ?? widget.user.username),
           trailing: trailingButton,
         );
       },

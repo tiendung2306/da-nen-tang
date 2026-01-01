@@ -6,7 +6,7 @@ part 'auth_model.g.dart';
 class UserInfo {
   final int id;
   final String username;
-  final String email;
+  final String? email;
   final String fullName;
   final String? avatarUrl;
   final bool? isActive;
@@ -18,7 +18,7 @@ class UserInfo {
   UserInfo({
     required this.id,
     required this.username,
-    required this.email,
+    this.email,
     required this.fullName,
     this.avatarUrl,
     this.isActive = false,

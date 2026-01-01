@@ -555,7 +555,15 @@ class ApiService {
       final response = await _dio.get(ApiConfig.familyShoppingLists(familyId));
       final data = response.data['data'];
       if (data == null) return [];
-      return (data as List).map((i) => ShoppingList.fromJson(i)).toList();
+      // Handle paginated response (PageResponse with 'content' field)
+      if (data is Map && data['content'] != null) {
+        return (data['content'] as List).map((i) => ShoppingList.fromJson(i)).toList();
+      }
+      // Handle direct list response
+      if (data is List) {
+        return data.map((i) => ShoppingList.fromJson(i)).toList();
+      }
+      return [];
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
@@ -566,7 +574,15 @@ class ApiService {
       final response = await _dio.get(ApiConfig.familyActiveShoppingLists(familyId));
       final data = response.data['data'];
       if (data == null) return [];
-      return (data as List).map((i) => ShoppingList.fromJson(i)).toList();
+      // Handle paginated response (PageResponse with 'content' field)
+      if (data is Map && data['content'] != null) {
+        return (data['content'] as List).map((i) => ShoppingList.fromJson(i)).toList();
+      }
+      // Handle direct list response
+      if (data is List) {
+        return data.map((i) => ShoppingList.fromJson(i)).toList();
+      }
+      return [];
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
