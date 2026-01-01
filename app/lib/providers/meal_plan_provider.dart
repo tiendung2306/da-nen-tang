@@ -276,4 +276,98 @@ class MealPlanProvider extends BaseProvider {
     _errorMessage = null;
     notifyListeners();
   }
+
+  // Update meal item
+  Future<void> updateMealItem(int itemId, int mealPlanId, CreateMealItemRequest updatedItem) async {
+    _errorMessage = null;
+    try {
+      final item = await _apiService.updateMealItem(itemId, updatedItem.toJson());
+      
+      // Update the meal plan in the list
+      final index = _mealPlans.indexWhere((plan) => plan.id == mealPlanId);
+      if (index != -1) {
+        final plan = _mealPlans[index];
+        final updatedItems = plan.items?.map((i) => i.id == itemId ? item : i).toList();
+        _mealPlans[index] = MealPlan(
+          id: plan.id,
+          familyId: plan.familyId,
+          date: plan.date,
+          mealType: plan.mealType,
+          note: plan.note,
+          createdBy: plan.createdBy,
+          createdAt: plan.createdAt,
+          updatedAt: DateTime.now(),
+          items: updatedItems,
+        );
+      }
+      
+      // Update current meal plan if viewing
+      if (_currentMealPlan?.id == mealPlanId) {
+        final updatedItems = _currentMealPlan!.items?.map((i) => i.id == itemId ? item : i).toList();
+        _currentMealPlan = MealPlan(
+          id: _currentMealPlan!.id,
+          familyId: _currentMealPlan!.familyId,
+          date: _currentMealPlan!.date,
+          mealType: _currentMealPlan!.mealType,
+          note: _currentMealPlan!.note,
+          createdBy: _currentMealPlan!.createdBy,
+          createdAt: _currentMealPlan!.createdAt,
+          updatedAt: DateTime.now(),
+          items: updatedItems,
+        );
+      }
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+    }
+  }
+
+  // Copy meal plan to another date
+  Future<MealPlan?> copyMealPlan(int mealPlanId, {required DateTime targetDate, MealType? targetMealType}) async {
+    _errorMessage = null;
+    try {
+      final copiedPlan = await _apiService.copyMealPlan(
+        mealPlanId,
+        targetDate: _formatDate(targetDate),
+        targetMealType: targetMealType?.name,
+      );
+      _mealPlans.add(copiedPlan);
+      notifyListeners();
+      return copiedPlan;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Generate shopping list from meal plans
+  Future<Map<String, dynamic>?> generateShoppingListFromMealPlans(int familyId, {required DateTime startDate, required DateTime endDate}) async {
+    _errorMessage = null;
+    try {
+      final result = await _apiService.generateShoppingListFromMealPlan(
+        familyId,
+        startDate: _formatDate(startDate),
+        endDate: _formatDate(endDate),
+      );
+      return result;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  // Get meal items for a specific meal plan
+  Future<List<MealItem>> fetchMealItems(int mealPlanId) async {
+    _errorMessage = null;
+    try {
+      return await _apiService.getMealItems(mealPlanId);
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return [];
+    }
+  }
 }

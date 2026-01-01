@@ -115,6 +115,8 @@ class ApiConfig {
   static String familyWeeklyMealPlans(int familyId) => '/families/$familyId/meal-plans/weekly';
   static String mealPlanItems(int mealPlanId) => '/meal-plans/$mealPlanId/items';
   static String mealItemById(int itemId) => '/meal-items/$itemId';
+  static String copyMealPlan(int mealPlanId) => '/meal-plans/$mealPlanId/copy';
+  static String generateShoppingListFromMealPlan(int familyId) => '/families/$familyId/meal-plans/generate-shopping-list';
 
   // --- Product Endpoints ---
   static const String products = '/master-products';
