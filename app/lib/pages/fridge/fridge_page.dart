@@ -87,7 +87,9 @@ class _FridgePageState extends State<FridgePage> {
           // Cảnh báo hết hạn
           if (selectedFamily != null)
             _buildExpiryWarningBanner(context),
-          // Thanh sắp xếp
+          // Thanh chọn ngăn và sắp xếp
+          if (selectedFamily != null)
+            _buildLocationFilterBar(context),
           if (selectedFamily != null)
             _buildSortBar(context),
           Expanded(
@@ -281,6 +283,60 @@ class _FridgePageState extends State<FridgePage> {
     );
   }
 
+  Widget _buildLocationFilterBar(BuildContext context) {
+    return Consumer<FridgeProvider>(
+      builder: (context, provider, child) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              const Icon(Icons.kitchen, size: 20, color: Colors.grey),
+              const SizedBox(width: 8),
+              const Text('Chọn ngăn:', style: TextStyle(fontWeight: FontWeight.w500)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _SortChip(
+                        label: 'Tất cả',
+                        icon: Icons.grid_view,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.all,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.all),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Ngăn đông',
+                        icon: Icons.ac_unit,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.freezer,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.freezer),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Ngăn mát',
+                        icon: Icons.kitchen,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.cooler,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.cooler),
+                      ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Kệ bếp',
+                        icon: Icons.shelves,
+                        isSelected: provider.currentLocationFilter == FridgeLocationFilter.pantry,
+                        onTap: () => provider.setLocationFilter(FridgeLocationFilter.pantry),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildSortBar(BuildContext context) {
     return Consumer<FridgeProvider>(
       builder: (context, provider, child) {
@@ -324,13 +380,6 @@ class _FridgePageState extends State<FridgePage> {
                         isSelected: provider.currentSort == FridgeSortType.nameZA,
                         onTap: () => provider.setSort(FridgeSortType.nameZA),
                       ),
-                      const SizedBox(width: 8),
-                      _SortChip(
-                        label: 'Theo ngăn',
-                        icon: Icons.kitchen,
-                        isSelected: provider.currentSort == FridgeSortType.byLocation,
-                        onTap: () => provider.setSort(FridgeSortType.byLocation),
-                      ),
                     ],
                   ),
                 ),
@@ -356,59 +405,19 @@ class _FridgePageState extends State<FridgePage> {
         }
 
         final sortedItems = provider.sortedItems;
-        final bool isByLocation = provider.currentSort == FridgeSortType.byLocation;
 
         return RefreshIndicator(
           onRefresh: () => provider.fetchFridgeItems(selectedFamily.id, isRefresh: true),
-          child: isByLocation
-              ? _buildGroupedByLocationList(sortedItems, provider)
-              : ListView.builder(
-                  controller: _scrollController,
-                  itemCount: sortedItems.length + (provider.isLoadingMore ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (index == sortedItems.length) {
-                      return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
-                    }
-                    return FridgeListItem(item: sortedItems[index]);
-                  },
-                ),
-        );
-      },
-    );
-  }
-
-  Widget _buildGroupedByLocationList(List<FridgeItem> items, FridgeProvider provider) {
-    final Map<String, List<FridgeItem>> grouped = {};
-    for (var item in items) {
-      final location = item.location.toUpperCase();
-      grouped.putIfAbsent(location, () => []).add(item);
-    }
-
-    final locationOrder = ['FREEZER', 'COOLER', 'PANTRY'];
-    final sortedLocations = grouped.keys.toList()
-      ..sort((a, b) {
-        final indexA = locationOrder.indexOf(a);
-        final indexB = locationOrder.indexOf(b);
-        return (indexA == -1 ? 999 : indexA).compareTo(indexB == -1 ? 999 : indexB);
-      });
-
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: sortedLocations.length + (provider.isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == sortedLocations.length) {
-          return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
-        }
-
-        final location = sortedLocations[index];
-        final locationItems = grouped[location]!;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _LocationHeader(location: location, itemCount: locationItems.length),
-            ...locationItems.map((item) => FridgeListItem(item: item)),
-          ],
+          child: ListView.builder(
+            controller: _scrollController,
+            itemCount: sortedItems.length + (provider.isLoadingMore ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == sortedItems.length) {
+                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+              }
+              return FridgeListItem(item: sortedItems[index]);
+            },
+          ),
         );
       },
     );
@@ -457,91 +466,6 @@ class _SortChip extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _LocationHeader extends StatelessWidget {
-  final String location;
-  final int itemCount;
-
-  const _LocationHeader({required this.location, required this.itemCount});
-
-  String _getLocationName() {
-    switch (location) {
-      case 'FREEZER':
-        return 'Ngăn đông';
-      case 'COOLER':
-        return 'Ngăn mát';
-      case 'PANTRY':
-        return 'Kệ bếp';
-      default:
-        return location;
-    }
-  }
-
-  IconData _getLocationIcon() {
-    switch (location) {
-      case 'FREEZER':
-        return Icons.ac_unit;
-      case 'COOLER':
-        return Icons.kitchen;
-      case 'PANTRY':
-        return Icons.shelves;
-      default:
-        return Icons.inventory_2;
-    }
-  }
-
-  Color _getLocationColor() {
-    switch (location) {
-      case 'FREEZER':
-        return Colors.blue;
-      case 'COOLER':
-        return Colors.teal;
-      case 'PANTRY':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: _getLocationColor().withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _getLocationColor().withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(_getLocationIcon(), color: _getLocationColor(), size: 22),
-          const SizedBox(width: 10),
-          Text(
-            _getLocationName(),
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: _getLocationColor(),
-            ),
-          ),
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getLocationColor(),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$itemCount món',
-              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
       ),
     );
   }

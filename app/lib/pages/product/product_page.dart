@@ -119,10 +119,10 @@ class _ProductPageState extends State<ProductPage> {
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.75,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
+                crossAxisCount: 3,
+                childAspectRatio: 0.7,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
               ),
               itemCount: products.length,
               itemBuilder: (context, index) {

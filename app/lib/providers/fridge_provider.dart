@@ -7,12 +7,13 @@ import 'package:flutter_boilerplate/services/locator.dart';
 
 enum FridgeFilterType { all, active, expiring, expired }
 
+enum FridgeLocationFilter { all, freezer, cooler, pantry }
+
 enum FridgeSortType {
   expirationNewest,  // Hạn sử dụng: mới đến cũ
   expirationOldest,  // Hạn sử dụng: cũ đến mới
   nameAZ,            // Tên: A-Z
   nameZA,            // Tên: Z-A
-  byLocation,        // Theo ngăn
 }
 
 class FridgeProvider extends BaseProvider {
@@ -22,6 +23,7 @@ class FridgeProvider extends BaseProvider {
   FridgeStatistics? _statistics;
   String? _errorMessage;
   FridgeFilterType _currentFilter = FridgeFilterType.all;
+  FridgeLocationFilter _currentLocationFilter = FridgeLocationFilter.all;
   FridgeSortType _currentSort = FridgeSortType.expirationOldest;
 
   int _currentPage = 0;
@@ -33,14 +35,32 @@ class FridgeProvider extends BaseProvider {
   String? get errorMessage => _errorMessage;
   bool get isLoadingMore => _isLoadingMore;
   FridgeFilterType get currentFilter => _currentFilter;
+  FridgeLocationFilter get currentLocationFilter => _currentLocationFilter;
   FridgeSortType get currentSort => _currentSort;
 
-  // Getter trả về danh sách đã sắp xếp
+  // Getter trả về danh sách đã lọc theo ngăn và sắp xếp
   List<FridgeItem> get sortedItems {
-    final sorted = List<FridgeItem>.from(_items);
+    // Lọc theo ngăn trước
+    List<FridgeItem> filtered;
+    switch (_currentLocationFilter) {
+      case FridgeLocationFilter.freezer:
+        filtered = _items.where((item) => item.location.toUpperCase() == 'FREEZER').toList();
+        break;
+      case FridgeLocationFilter.cooler:
+        filtered = _items.where((item) => item.location.toUpperCase() == 'COOLER').toList();
+        break;
+      case FridgeLocationFilter.pantry:
+        filtered = _items.where((item) => item.location.toUpperCase() == 'PANTRY').toList();
+        break;
+      case FridgeLocationFilter.all:
+      default:
+        filtered = List<FridgeItem>.from(_items);
+    }
+
+    // Sau đó sắp xếp
     switch (_currentSort) {
       case FridgeSortType.expirationNewest:
-        sorted.sort((a, b) {
+        filtered.sort((a, b) {
           if (a.expirationDate == null && b.expirationDate == null) return 0;
           if (a.expirationDate == null) return 1;
           if (b.expirationDate == null) return -1;
@@ -48,7 +68,7 @@ class FridgeProvider extends BaseProvider {
         });
         break;
       case FridgeSortType.expirationOldest:
-        sorted.sort((a, b) {
+        filtered.sort((a, b) {
           if (a.expirationDate == null && b.expirationDate == null) return 0;
           if (a.expirationDate == null) return 1;
           if (b.expirationDate == null) return -1;
@@ -56,26 +76,22 @@ class FridgeProvider extends BaseProvider {
         });
         break;
       case FridgeSortType.nameAZ:
-        sorted.sort((a, b) => a.productName.toLowerCase().compareTo(b.productName.toLowerCase()));
+        filtered.sort((a, b) => a.productName.toLowerCase().compareTo(b.productName.toLowerCase()));
         break;
       case FridgeSortType.nameZA:
-        sorted.sort((a, b) => b.productName.toLowerCase().compareTo(a.productName.toLowerCase()));
-        break;
-      case FridgeSortType.byLocation:
-        sorted.sort((a, b) {
-          final locationOrder = {'FREEZER': 0, 'COOLER': 1, 'PANTRY': 2};
-          final orderA = locationOrder[a.location.toUpperCase()] ?? 3;
-          final orderB = locationOrder[b.location.toUpperCase()] ?? 3;
-          if (orderA != orderB) return orderA.compareTo(orderB);
-          return a.productName.toLowerCase().compareTo(b.productName.toLowerCase());
-        });
+        filtered.sort((a, b) => b.productName.toLowerCase().compareTo(a.productName.toLowerCase()));
         break;
     }
-    return sorted;
+    return filtered;
   }
 
   void setSort(FridgeSortType sort) {
     _currentSort = sort;
+    notifyListeners();
+  }
+
+  void setLocationFilter(FridgeLocationFilter filter) {
+    _currentLocationFilter = filter;
     notifyListeners();
   }
 
