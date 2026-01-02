@@ -49,6 +49,8 @@ class SecurityConfig(
                     .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/master-products/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/v1/recipes/**").permitAll()
+                    // AI endpoints (authenticated users only, but explicitly allow here for clarity)
+                    .requestMatchers("/api/v1/ai/**").authenticated()
                     // Admin endpoints
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                     // All other endpoints require authentication (bao gồm /api/v1/auth/me)

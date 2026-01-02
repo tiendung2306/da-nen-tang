@@ -51,6 +51,15 @@ dependencies {
     // OpenAPI / Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
 
+    // WebClient for external API calls (Fireworks AI)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    
+    // Rate Limiting
+    implementation("com.bucket4j:bucket4j-core:8.7.0")
+    
+    // Dotenv for loading .env files
+    implementation("me.paulschwarz:spring-dotenv:4.0.0")
+
     // MapStruct
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")

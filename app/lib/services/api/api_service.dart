@@ -882,4 +882,45 @@ class ApiService {
       throw _handleDioError(e);
     }
   }
+
+  // --- AI Services ---
+  /// Generate AI-powered recipe suggestion based on available ingredients
+  Future<Map<String, dynamic>> generateAIRecipeSuggestion({
+    required List<String> availableIngredients,
+    String? dietaryPreference,
+    String? cuisineType,
+    int? servings,
+  }) async {
+    try {
+      final requestData = {
+        'availableIngredients': availableIngredients,
+        if (dietaryPreference != null && dietaryPreference.isNotEmpty)
+          'dietaryPreference': dietaryPreference,
+        if (cuisineType != null && cuisineType.isNotEmpty)
+          'cuisineType': cuisineType,
+        if (servings != null)
+          'servings': servings,
+      };
+
+      final response = await _dio.post('/ai/recipes/suggest', data: requestData);
+      return response.data['data'];
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 429) {
+        throw Exception('Bạn đã vượt quá giới hạn 10 yêu cầu AI mỗi ngày. Vui lòng thử lại sau.');
+      } else if (e.response?.statusCode == 401) {
+        throw Exception('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      }
+      throw _handleDioError(e);
+    }
+  }
+
+  /// Check remaining AI requests for current user
+  Future<Map<String, dynamic>> checkAIRateLimit() async {
+    try {
+      final response = await _dio.get('/ai/recipes/rate-limit');
+      return response.data['data'];
+    } on DioException catch (e) {
+      throw _handleDioError(e);
+    }
+  }
 }

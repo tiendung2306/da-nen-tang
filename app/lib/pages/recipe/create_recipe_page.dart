@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/providers/recipe_provider.dart';
 import 'package:flutter_boilerplate/providers/product_provider.dart';
+import 'package:flutter_boilerplate/providers/fridge_provider.dart';
+import 'package:flutter_boilerplate/providers/family_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 import 'package:flutter_boilerplate/models/recipe_model.dart';
+import 'ai_recipe_suggestion_dialog.dart';
 
 class CreateRecipePage extends StatefulWidget {
   const CreateRecipePage({Key? key}) : super(key: key);
@@ -98,6 +101,82 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         }
       }
     }
+  }
+
+  void _showAISuggestionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: context.read<FridgeProvider>()),
+          ChangeNotifierProvider.value(value: context.read<FamilyProvider>()),
+        ],
+        child: AIRecipeSuggestionDialog(
+          onRecipeSelected: _applyAISuggestedRecipe,
+        ),
+      ),
+    );
+  }
+
+  void _applyAISuggestedRecipe(Map<String, dynamic> recipe) {
+    setState(() {
+      // Fill in the form fields
+      _titleController.text = recipe['title'] ?? '';
+      _descriptionController.text = recipe['description'] ?? '';
+      
+      // Convert instructions array to numbered string
+      final instructions = recipe['instructions'] as List<dynamic>? ?? [];
+      _stepsController.text = instructions.asMap().entries.map((entry) {
+        return '${entry.key + 1}. ${entry.value}';
+      }).join('\n');
+      
+      _notesController.text = recipe['notes'] ?? '';
+      
+      // Parse servings, prepTime, cookTime
+      if (recipe['servings'] != null) {
+        _servingsController.text = recipe['servings'].toString();
+      }
+      if (recipe['prepTime'] != null) {
+        _prepTimeController.text = recipe['prepTime'].toString();
+      }
+      if (recipe['cookTime'] != null) {
+        _cookTimeController.text = recipe['cookTime'].toString();
+      }
+
+      // Set difficulty
+      final difficultyStr = (recipe['difficulty'] ?? 'MEDIUM').toString().toUpperCase();
+      if (difficultyStr == 'EASY') {
+        _selectedDifficulty = Difficulty.EASY;
+      } else if (difficultyStr == 'HARD') {
+        _selectedDifficulty = Difficulty.HARD;
+      } else {
+        _selectedDifficulty = Difficulty.MEDIUM;
+      }
+
+      // Add ingredients
+      _selectedIngredients.clear();
+      final ingredients = recipe['ingredients'] as List?;
+      if (ingredients != null) {
+        for (var ing in ingredients) {
+          _selectedIngredients.add({
+            'id': null, // Custom ingredient, no product ID
+            'name': ing['name'],
+            'quantity': ing['quantity'] ?? 1.0,
+            'unit': ing['unit'] ?? 'phần',
+            'note': ing['note'],
+            'isOptional': ing['isOptional'] ?? false,
+          });
+        }
+      }
+      _updateIngredientsDisplay();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã áp dụng công thức từ AI. Bạn có thể chỉnh sửa trước khi lưu.'),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 
   void _showIngredientSelectionDialog() {
@@ -506,6 +585,13 @@ class _CreateRecipePageState extends State<CreateRecipePage> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black), onPressed: () => Navigator.of(context).pop()),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome, color: Color(0xFFF26F21)),
+            tooltip: 'Đề xuất công thức từ AI',
+            onPressed: _showAISuggestionDialog,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
