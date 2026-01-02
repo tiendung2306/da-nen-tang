@@ -12,20 +12,20 @@ import org.springframework.stereotype.Repository
 @Repository
 interface ShoppingListRepository : JpaRepository<ShoppingList, Long> {
     
-    @EntityGraph(attributePaths = ["family", "createdBy"])
+    @EntityGraph(attributePaths = ["family", "createdBy", "assignedTo"])
     @Query("SELECT sl FROM ShoppingList sl WHERE sl.family.id = :familyId")
     fun findByFamilyIdWithDetails(familyId: Long): List<ShoppingList>
     
-    @EntityGraph(attributePaths = ["family", "createdBy"])
+    @EntityGraph(attributePaths = ["family", "createdBy", "assignedTo"])
     @Query("SELECT sl FROM ShoppingList sl WHERE sl.family.id = :familyId")
     fun findByFamilyIdWithDetails(familyId: Long, pageable: Pageable): Page<ShoppingList>
     
     fun findByFamilyIdAndStatus(familyId: Long, status: ShoppingListStatus): List<ShoppingList>
 
-    @Query("SELECT sl FROM ShoppingList sl LEFT JOIN FETCH sl.items LEFT JOIN FETCH sl.createdBy WHERE sl.id = :id")
+    @Query("SELECT sl FROM ShoppingList sl LEFT JOIN FETCH sl.items LEFT JOIN FETCH sl.createdBy LEFT JOIN FETCH sl.assignedTo WHERE sl.id = :id")
     fun findByIdWithItems(id: Long): ShoppingList?
 
-    @EntityGraph(attributePaths = ["family", "createdBy"])
+    @EntityGraph(attributePaths = ["family", "createdBy", "assignedTo"])
     @Query("""
         SELECT sl FROM ShoppingList sl 
         WHERE sl.family.id = :familyId 

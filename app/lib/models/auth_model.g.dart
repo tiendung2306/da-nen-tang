@@ -10,7 +10,7 @@ UserInfo _$UserInfoFromJson(Map<String, dynamic> json) => UserInfo(
       id: (json['id'] as num).toInt(),
       username: json['username'] as String,
       email: json['email'] as String?,
-      fullName: json['fullName'] as String,
+      fullName: json['fullName'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
       isActive: json['isActive'] as bool? ?? false,
       roles:

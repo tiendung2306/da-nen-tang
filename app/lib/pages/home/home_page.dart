@@ -236,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${_getGreeting()}, ${userInfo.fullName}! 👋',
+                          '${_getGreeting()}, ${userInfo.fullName ?? userInfo.username}! 👋',
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_boilerplate/models/shopping_list_model.dart';
+import 'package:flutter_boilerplate/models/product_model.dart';
 import 'package:flutter_boilerplate/providers/shopping_list_provider.dart';
+import 'package:flutter_boilerplate/providers/product_provider.dart';
 import 'package:flutter_boilerplate/providers/base_provider.dart';
 
 class ShoppingListDetailPage extends StatefulWidget {
@@ -17,11 +19,37 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   final TextEditingController _itemNameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController(text: '1');
   final TextEditingController _unitController = TextEditingController();
+  bool _selectionMode = false;
+  final Set<int> _selectedItems = {};
+  List<Category> _availableCategories = [];
+  List<Product> _availableProducts = [];
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _loadProductsAndCategories();
+  }
+
+  Future<void> _loadProductsAndCategories() async {
+    final productProvider = context.read<ProductProvider>();
+    await productProvider.fetchProducts(page: 0, size: 1000);
+    
+    setState(() {
+      _availableProducts = productProvider.products;
+      
+      // Extract unique categories from products
+      final categoryMap = <int, Category>{};
+      for (var product in _availableProducts) {
+        if (product.categories != null) {
+          for (var category in product.categories!) {
+            categoryMap[category.id] = category;
+          }
+        }
+      }
+      _availableCategories = categoryMap.values.toList()
+        ..sort((a, b) => a.name.compareTo(b.name));
+    });
   }
 
   @override
@@ -44,21 +72,59 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(shoppingList?.name ?? 'Chi tiết danh sách'),
+            title: Text(_selectionMode 
+                ? '${_selectedItems.length} đã chọn' 
+                : shoppingList?.name ?? 'Chi tiết danh sách'),
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
+            leading: _selectionMode
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _selectionMode = false;
+                        _selectedItems.clear();
+                      });
+                    },
+                  )
+                : null,
             actions: [
-              if (shoppingList != null)
+              if (_selectionMode) ...[
+                IconButton(
+                  icon: const Icon(Icons.select_all),
+                  onPressed: _selectAll,
+                  tooltip: 'Chọn tất cả',
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) => _handleBulkAction(value, provider),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'mark_bought', child: Text('Đánh dấu đã mua')),
+                    const PopupMenuItem(value: 'mark_unbought', child: Text('Đánh dấu chưa mua')),
+                    const PopupMenuItem(value: 'delete', child: Text('Xóa', style: TextStyle(color: Colors.red))),
+                  ],
+                ),
+              ] else if (shoppingList != null) ...[
+                IconButton(
+                  icon: const Icon(Icons.checklist),
+                  onPressed: () {
+                    setState(() {
+                      _selectionMode = true;
+                    });
+                  },
+                  tooltip: 'Chọn nhiều',
+                ),
                 PopupMenuButton<String>(
                   onSelected: (value) => _handleMenuAction(value, provider, shoppingList),
                   itemBuilder: (context) => [
-                    if (shoppingList.status == ShoppingListStatus.DRAFT)
+                    if (shoppingList.status == ShoppingListStatus.PLANNING)
                       const PopupMenuItem(value: 'start', child: Text('Bắt đầu mua sắm')),
                     if (shoppingList.status == ShoppingListStatus.SHOPPING)
                       const PopupMenuItem(value: 'complete', child: Text('Hoàn thành')),
                     const PopupMenuItem(value: 'delete', child: Text('Xóa danh sách', style: TextStyle(color: Colors.red))),
                   ],
                 ),
+              ],
             ],
           ),
           body: _buildBody(provider, shoppingList),
@@ -182,18 +248,54 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   }
 
   Widget _buildItemCard(ShoppingItem item, ShoppingListProvider provider) {
+    final isSelected = _selectedItems.contains(item.id);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: isSelected ? Colors.green.withOpacity(0.1) : null,
       child: ListTile(
-        leading: Checkbox(
-          value: item.isBought,
-          onChanged: provider.currentShoppingList?.status == ShoppingListStatus.COMPLETED
-              ? null
-              : (value) {
-                  provider.toggleItemBought(item.id, value ?? false, version: item.version);
+        onTap: _selectionMode
+            ? () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedItems.remove(item.id);
+                  } else {
+                    _selectedItems.add(item.id);
+                  }
+                });
+              }
+            : null,
+        onLongPress: () {
+          if (!_selectionMode) {
+            setState(() {
+              _selectionMode = true;
+              _selectedItems.add(item.id);
+            });
+          }
+        },
+        leading: _selectionMode
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedItems.add(item.id);
+                    } else {
+                      _selectedItems.remove(item.id);
+                    }
+                  });
                 },
-          activeColor: Colors.green,
-        ),
+                activeColor: Colors.green,
+              )
+            : Checkbox(
+                value: item.isBought,
+                onChanged: provider.currentShoppingList?.status == ShoppingListStatus.COMPLETED
+                    ? null
+                    : (value) {
+                        provider.toggleItemBought(item.id, value ?? false, version: item.version);
+                      },
+                activeColor: Colors.green,
+              ),
         title: Text(
           item.name,
           style: TextStyle(
@@ -205,10 +307,12 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
           '${item.quantity} ${item.unit ?? ''}'.trim(),
           style: TextStyle(color: item.isBought ? Colors.grey : Colors.grey[600]),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          onPressed: () => _confirmDeleteItem(item, provider),
-        ),
+        trailing: _selectionMode
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () => _confirmDeleteItem(item, provider),
+              ),
       ),
     );
   }
@@ -217,6 +321,9 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     _itemNameController.clear();
     _quantityController.text = '1';
     _unitController.clear();
+    Category? selectedCategory;
+    Product? selectedProduct;
+    bool isCustomProduct = true;
 
     showModalBottomSheet(
       context: context,
@@ -224,70 +331,159 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'Thêm món mới',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          List<Product> getFilteredProducts() {
+            if (selectedCategory == null) {
+              return _availableProducts;
+            }
+            return _availableProducts.where((product) {
+              return product.categories?.any((cat) => cat.id == selectedCategory!.id) ?? false;
+            }).toList();
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              left: 16,
+              right: 16,
+              top: 16,
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _itemNameController,
-              decoration: const InputDecoration(
-                labelText: 'Tên món *',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.shopping_basket),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: TextField(
-                    controller: _quantityController,
-                    decoration: const InputDecoration(
-                      labelText: 'Số lượng',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Thêm món mới',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: _unitController,
+                  const SizedBox(height: 16),
+                  // Chọn danh mục
+                  DropdownButtonFormField<Category>(
+                    value: selectedCategory,
                     decoration: const InputDecoration(
-                      labelText: 'Đơn vị (kg, lít, cái...)',
+                      labelText: 'Danh mục (tùy chọn)',
                       border: OutlineInputBorder(),
+                      helperText: 'Chọn danh mục để lọc món',
+                      prefixIcon: Icon(Icons.category),
                     ),
+                    items: [
+                      const DropdownMenuItem<Category>(
+                        value: null,
+                        child: Text('Tất cả danh mục'),
+                      ),
+                      ..._availableCategories.map((category) {
+                        return DropdownMenuItem<Category>(
+                          value: category,
+                          child: Text(category.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setModalState(() {
+                        selectedCategory = value;
+                        selectedProduct = null;
+                        isCustomProduct = true;
+                        _itemNameController.clear();
+                        _unitController.clear();
+                      });
+                    },
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _addItem,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 14),
+                  const SizedBox(height: 12),
+                  // Chọn món có sẵn hoặc "Khác"
+                  DropdownButtonFormField<Product>(
+                    value: selectedProduct,
+                    decoration: const InputDecoration(
+                      labelText: 'Chọn món',
+                      border: OutlineInputBorder(),
+                      helperText: 'Chọn từ danh sách hoặc "Khác" để nhập tên riêng',
+                      prefixIcon: Icon(Icons.shopping_basket),
+                    ),
+                    items: [
+                      const DropdownMenuItem<Product>(
+                        value: null,
+                        child: Text('➕ Khác (nhập tên riêng)'),
+                      ),
+                      ...getFilteredProducts().map((product) {
+                        return DropdownMenuItem<Product>(
+                          value: product,
+                          child: Text(product.name),
+                        );
+                      }),
+                    ],
+                    onChanged: (value) {
+                      setModalState(() {
+                        selectedProduct = value;
+                        if (value != null) {
+                          isCustomProduct = false;
+                          _itemNameController.text = value.name;
+                          _unitController.text = value.defaultUnit;
+                        } else {
+                          isCustomProduct = true;
+                          _itemNameController.clear();
+                          _unitController.clear();
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _itemNameController,
+                    enabled: isCustomProduct,
+                    decoration: InputDecoration(
+                      labelText: 'Tên món *',
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.shopping_basket),
+                      suffixIcon: isCustomProduct ? null : const Icon(Icons.lock, size: 18),
+                    ),
+                    autofocus: isCustomProduct,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: TextField(
+                          controller: _quantityController,
+                          decoration: const InputDecoration(
+                            labelText: 'Số lượng',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.number,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: TextField(
+                          controller: _unitController,
+                          enabled: isCustomProduct,
+                          decoration: InputDecoration(
+                            labelText: 'Đơn vị *',
+                            hintText: 'vd: kg, quả, gói...',
+                            border: const OutlineInputBorder(),
+                            suffixIcon: isCustomProduct ? null : const Icon(Icons.lock, size: 18),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _addItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Thêm món', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              child: const Text('Thêm món', style: TextStyle(color: Colors.white)),
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -344,13 +540,39 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     );
   }
 
-  void _handleMenuAction(String action, ShoppingListProvider provider, ShoppingList list) {
+  void _handleMenuAction(String action, ShoppingListProvider provider, ShoppingList list) async {
     switch (action) {
       case 'start':
-        provider.updateShoppingListStatus(list.id, ShoppingListStatus.SHOPPING, version: list.version ?? 0);
+        final success = await provider.updateShoppingListStatus(list.id, ShoppingListStatus.SHOPPING, version: list.version ?? 0);
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể cập nhật trạng thái. ${provider.errorMessage ?? "Vui lòng thử lại"}'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Tải lại',
+                textColor: Colors.white,
+                onPressed: () => _loadData(),
+              ),
+            ),
+          );
+        }
         break;
       case 'complete':
-        provider.updateShoppingListStatus(list.id, ShoppingListStatus.COMPLETED, version: list.version ?? 0);
+        final success = await provider.updateShoppingListStatus(list.id, ShoppingListStatus.COMPLETED, version: list.version ?? 0);
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể cập nhật trạng thái. ${provider.errorMessage ?? "Vui lòng thử lại"}'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Tải lại',
+                textColor: Colors.white,
+                onPressed: () => _loadData(),
+              ),
+            ),
+          );
+        }
         break;
       case 'delete':
         showDialog(
@@ -382,7 +604,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
   Color _getStatusColor(ShoppingListStatus status) {
     switch (status) {
-      case ShoppingListStatus.DRAFT:
+      case ShoppingListStatus.PLANNING:
         return Colors.orange;
       case ShoppingListStatus.SHOPPING:
         return Colors.blue;
@@ -393,12 +615,106 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
   String _getStatusText(ShoppingListStatus status) {
     switch (status) {
-      case ShoppingListStatus.DRAFT:
+      case ShoppingListStatus.PLANNING:
         return 'Đang lập';
       case ShoppingListStatus.SHOPPING:
         return 'Đang mua';
       case ShoppingListStatus.COMPLETED:
         return 'Hoàn thành';
     }
+  }
+
+  void _selectAll() {
+    final provider = context.read<ShoppingListProvider>();
+    final items = provider.currentShoppingList?.items ?? [];
+    setState(() {
+      if (_selectedItems.length == items.length) {
+        _selectedItems.clear();
+      } else {
+        _selectedItems.clear();
+        _selectedItems.addAll(items.map((item) => item.id));
+      }
+    });
+  }
+
+  void _handleBulkAction(String action, ShoppingListProvider provider) {
+    if (_selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn ít nhất một món')),
+      );
+      return;
+    }
+
+    switch (action) {
+      case 'mark_bought':
+        _bulkMarkBought(provider, true);
+        break;
+      case 'mark_unbought':
+        _bulkMarkBought(provider, false);
+        break;
+      case 'delete':
+        _bulkDelete(provider);
+        break;
+    }
+  }
+
+  void _bulkMarkBought(ShoppingListProvider provider, bool isBought) async {
+    final items = provider.currentShoppingList?.items ?? [];
+    final selectedItemsList = items.where((item) => _selectedItems.contains(item.id)).toList();
+    
+    for (final item in selectedItemsList) {
+      if (item.isBought != isBought) {
+        await provider.toggleItemBought(item.id, isBought, version: item.version);
+      }
+    }
+    
+    setState(() {
+      _selectionMode = false;
+      _selectedItems.clear();
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã cập nhật ${selectedItemsList.length} món')),
+      );
+    }
+  }
+
+  void _bulkDelete(ShoppingListProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận xóa'),
+        content: Text('Bạn có chắc muốn xóa ${_selectedItems.length} món đã chọn?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final selectedIds = _selectedItems.toList();
+              
+              for (final itemId in selectedIds) {
+                await provider.deleteShoppingItem(itemId);
+              }
+              
+              setState(() {
+                _selectionMode = false;
+                _selectedItems.clear();
+              });
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Đã xóa ${selectedIds.length} món')),
+                );
+              }
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

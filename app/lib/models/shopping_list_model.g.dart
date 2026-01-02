@@ -12,11 +12,14 @@ ShoppingList _$ShoppingListFromJson(Map<String, dynamic> json) => ShoppingList(
       description: json['description'] as String?,
       familyId: (json['familyId'] as num).toInt(),
       status: $enumDecode(_$ShoppingListStatusEnumMap, json['status'],
-          unknownValue: ShoppingListStatus.DRAFT),
+          unknownValue: ShoppingListStatus.PLANNING),
       version: (json['version'] as num?)?.toInt(),
       createdBy: json['createdBy'] == null
           ? null
           : UserInfo.fromJson(json['createdBy'] as Map<String, dynamic>),
+      assignedTo: json['assignedTo'] == null
+          ? null
+          : UserInfo.fromJson(json['assignedTo'] as Map<String, dynamic>),
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
@@ -39,6 +42,7 @@ Map<String, dynamic> _$ShoppingListToJson(ShoppingList instance) =>
       'status': _$ShoppingListStatusEnumMap[instance.status]!,
       'version': instance.version,
       'createdBy': instance.createdBy,
+      'assignedTo': instance.assignedTo,
       'createdAt': instance.createdAt?.toIso8601String(),
       'updatedAt': instance.updatedAt?.toIso8601String(),
       'items': instance.items,
@@ -47,7 +51,7 @@ Map<String, dynamic> _$ShoppingListToJson(ShoppingList instance) =>
     };
 
 const _$ShoppingListStatusEnumMap = {
-  ShoppingListStatus.DRAFT: 'DRAFT',
+  ShoppingListStatus.PLANNING: 'PLANNING',
   ShoppingListStatus.SHOPPING: 'SHOPPING',
   ShoppingListStatus.COMPLETED: 'COMPLETED',
 };
@@ -95,6 +99,7 @@ CreateShoppingListRequest _$CreateShoppingListRequestFromJson(
       familyId: (json['familyId'] as num).toInt(),
       name: json['name'] as String,
       description: json['description'] as String?,
+      assignedToId: (json['assignedToId'] as num?)?.toInt(),
       items: (json['items'] as List<dynamic>?)
           ?.map((e) =>
               CreateShoppingItemRequest.fromJson(e as Map<String, dynamic>))
@@ -107,6 +112,7 @@ Map<String, dynamic> _$CreateShoppingListRequestToJson(
       'familyId': instance.familyId,
       'name': instance.name,
       'description': instance.description,
+      'assignedToId': instance.assignedToId,
       'items': instance.items,
     };
 

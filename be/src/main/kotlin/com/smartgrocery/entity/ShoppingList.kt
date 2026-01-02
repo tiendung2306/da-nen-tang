@@ -34,6 +34,10 @@ class ShoppingList(
     @JoinColumn(name = "created_by", nullable = false)
     var createdBy: User,
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to")
+    var assignedTo: User? = null,
+
     @Version
     @Column(name = "version")
     var version: Long = 0,

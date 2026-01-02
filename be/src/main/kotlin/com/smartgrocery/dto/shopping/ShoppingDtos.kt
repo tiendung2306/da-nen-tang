@@ -23,6 +23,8 @@ data class CreateShoppingListRequest(
     @field:Size(max = 500, message = "Description must not exceed 500 characters")
     val description: String? = null,
 
+    val assignedToId: Long? = null,
+
     @field:Valid
     val items: List<CreateShoppingItemRequest> = emptyList()
 )
@@ -36,6 +38,8 @@ data class UpdateShoppingListRequest(
 
     val status: ShoppingListStatus? = null,
 
+    val assignedToId: Long? = null,
+
     @field:NotNull(message = "Version is required for optimistic locking")
     val version: Long
 )
@@ -47,6 +51,7 @@ data class ShoppingListResponse(
     val description: String?,
     val status: ShoppingListStatus,
     val createdBy: UserSimpleResponse,
+    val assignedTo: UserSimpleResponse?,
     val version: Long,
     val itemCount: Int,
     val boughtCount: Int,
@@ -61,6 +66,7 @@ data class ShoppingListDetailResponse(
     val description: String?,
     val status: ShoppingListStatus,
     val createdBy: UserSimpleResponse,
+    val assignedTo: UserSimpleResponse?,
     val version: Long,
     val items: List<ShoppingItemResponse>,
     val createdAt: Instant,

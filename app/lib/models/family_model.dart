@@ -85,7 +85,7 @@ class FamilyMember {
       return FamilyMember(
         id: user['id'] as int,
         username: user['username'] as String? ?? '',
-        fullName: user['fullName'] as String,
+        fullName: user['fullName'] as String? ?? user['username'] as String? ?? '',
         email: user['email'] as String?,
         role: json['role'] as String,
         nickname: json['nickname'] as String?,
@@ -96,7 +96,7 @@ class FamilyMember {
       return FamilyMember(
         id: json['userId'] as int,
         username: json['username'] as String? ?? '',
-        fullName: json['fullName'] as String,
+        fullName: json['fullName'] as String? ?? json['username'] as String? ?? '',
         email: json['email'] as String?,
         role: json['role'] as String,
         nickname: json['nickname'] as String?,

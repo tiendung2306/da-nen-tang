@@ -118,7 +118,7 @@ class _RecipeDetailPageState extends State<RecipeDetailPage> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'bởi ${recipeDetail.createdBy.fullName}',
+                    'bởi ${recipeDetail.createdBy.fullName ?? recipeDetail.createdBy.username}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                 ),

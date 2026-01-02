@@ -7,19 +7,19 @@ class UserInfo {
   final int id;
   final String username;
   final String? email;
-  final String fullName;
+  final String? fullName;
   final String? avatarUrl;
   final bool? isActive;
   // FIX: Made roles nullable and provided a default value.
   final List<String>? roles;
 
-  String get name => fullName;
+  String get name => fullName ?? username;
 
   UserInfo({
     required this.id,
     required this.username,
     this.email,
-    required this.fullName,
+    this.fullName,
     this.avatarUrl,
     this.isActive = false,
     this.roles = const [], // Default to an empty list if not provided

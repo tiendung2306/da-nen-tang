@@ -261,7 +261,7 @@ class _FamilyRecipeListPageState extends State<FamilyRecipeListPage> {
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
-                                          _buildInfoChip(Icons.person_outline, recipe.createdBy.fullName),
+                                          _buildInfoChip(Icons.person_outline, recipe.createdBy.fullName ?? recipe.createdBy.username),
                                           const SizedBox(width: 8),
                                           _buildDifficultyChip(recipe.difficulty),
                                           const Spacer(),

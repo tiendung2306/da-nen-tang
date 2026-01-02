@@ -91,7 +91,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
                   backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
                   child: avatarUrl == null
                       ? Text(
-                          userInfo.fullName.isNotEmpty ? userInfo.fullName[0].toUpperCase() : '?',
+                          (userInfo.fullName?.isNotEmpty ?? false) ? userInfo.fullName![0].toUpperCase() : (userInfo.username.isNotEmpty ? userInfo.username[0].toUpperCase() : '?'),
                           style: const TextStyle(fontSize: 40, color: Colors.grey),
                         )
                       : null,
@@ -118,7 +118,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
           const SizedBox(height: 24),
-          _buildInfoRow(label: 'Tên tài khoản', value: userInfo.fullName),
+          _buildInfoRow(label: 'Tên tài khoản', value: userInfo.fullName ?? userInfo.username),
           _buildInfoRow(label: 'Email', value: userInfo.email ?? ''),
           const SizedBox(height: 40),
           SizedBox(

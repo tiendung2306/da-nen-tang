@@ -829,12 +829,12 @@ class _InviteMemberDialogState extends State<_InviteMemberDialog> with SingleTic
           leading: CircleAvatar(
             backgroundColor: Colors.blue[100],
             child: Text(
-              friend.fullName.isNotEmpty ? friend.fullName[0].toUpperCase() : '?',
+              (friend.fullName?.isNotEmpty ?? false) ? friend.fullName![0].toUpperCase() : '?',
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
             ),
           ),
           title: Text(
-            friend.fullName,
+            friend.fullName ?? friend.username,
             style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           subtitle: Text('@${friend.username}'),
