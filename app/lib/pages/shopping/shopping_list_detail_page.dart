@@ -17,6 +17,8 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   final TextEditingController _itemNameController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController(text: '1');
   final TextEditingController _unitController = TextEditingController();
+  bool _selectionMode = false;
+  final Set<int> _selectedItems = {};
 
   @override
   void initState() {
@@ -44,21 +46,59 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(shoppingList?.name ?? 'Chi tiết danh sách'),
+            title: Text(_selectionMode 
+                ? '${_selectedItems.length} đã chọn' 
+                : shoppingList?.name ?? 'Chi tiết danh sách'),
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
+            leading: _selectionMode
+                ? IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _selectionMode = false;
+                        _selectedItems.clear();
+                      });
+                    },
+                  )
+                : null,
             actions: [
-              if (shoppingList != null)
+              if (_selectionMode) ...[
+                IconButton(
+                  icon: const Icon(Icons.select_all),
+                  onPressed: _selectAll,
+                  tooltip: 'Chọn tất cả',
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (value) => _handleBulkAction(value, provider),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'mark_bought', child: Text('Đánh dấu đã mua')),
+                    const PopupMenuItem(value: 'mark_unbought', child: Text('Đánh dấu chưa mua')),
+                    const PopupMenuItem(value: 'delete', child: Text('Xóa', style: TextStyle(color: Colors.red))),
+                  ],
+                ),
+              ] else if (shoppingList != null) ...[
+                IconButton(
+                  icon: const Icon(Icons.checklist),
+                  onPressed: () {
+                    setState(() {
+                      _selectionMode = true;
+                    });
+                  },
+                  tooltip: 'Chọn nhiều',
+                ),
                 PopupMenuButton<String>(
                   onSelected: (value) => _handleMenuAction(value, provider, shoppingList),
                   itemBuilder: (context) => [
-                    if (shoppingList.status == ShoppingListStatus.DRAFT)
+                    if (shoppingList.status == ShoppingListStatus.PLANNING)
                       const PopupMenuItem(value: 'start', child: Text('Bắt đầu mua sắm')),
                     if (shoppingList.status == ShoppingListStatus.SHOPPING)
                       const PopupMenuItem(value: 'complete', child: Text('Hoàn thành')),
                     const PopupMenuItem(value: 'delete', child: Text('Xóa danh sách', style: TextStyle(color: Colors.red))),
                   ],
                 ),
+              ],
             ],
           ),
           body: _buildBody(provider, shoppingList),
@@ -182,18 +222,54 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
   }
 
   Widget _buildItemCard(ShoppingItem item, ShoppingListProvider provider) {
+    final isSelected = _selectedItems.contains(item.id);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color: isSelected ? Colors.green.withOpacity(0.1) : null,
       child: ListTile(
-        leading: Checkbox(
-          value: item.isBought,
-          onChanged: provider.currentShoppingList?.status == ShoppingListStatus.COMPLETED
-              ? null
-              : (value) {
-                  provider.toggleItemBought(item.id, value ?? false, version: item.version);
+        onTap: _selectionMode
+            ? () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedItems.remove(item.id);
+                  } else {
+                    _selectedItems.add(item.id);
+                  }
+                });
+              }
+            : null,
+        onLongPress: () {
+          if (!_selectionMode) {
+            setState(() {
+              _selectionMode = true;
+              _selectedItems.add(item.id);
+            });
+          }
+        },
+        leading: _selectionMode
+            ? Checkbox(
+                value: isSelected,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      _selectedItems.add(item.id);
+                    } else {
+                      _selectedItems.remove(item.id);
+                    }
+                  });
                 },
-          activeColor: Colors.green,
-        ),
+                activeColor: Colors.green,
+              )
+            : Checkbox(
+                value: item.isBought,
+                onChanged: provider.currentShoppingList?.status == ShoppingListStatus.COMPLETED
+                    ? null
+                    : (value) {
+                        provider.toggleItemBought(item.id, value ?? false, version: item.version);
+                      },
+                activeColor: Colors.green,
+              ),
         title: Text(
           item.name,
           style: TextStyle(
@@ -205,10 +281,12 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
           '${item.quantity} ${item.unit ?? ''}'.trim(),
           style: TextStyle(color: item.isBought ? Colors.grey : Colors.grey[600]),
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          onPressed: () => _confirmDeleteItem(item, provider),
-        ),
+        trailing: _selectionMode
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () => _confirmDeleteItem(item, provider),
+              ),
       ),
     );
   }
@@ -382,7 +460,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
   Color _getStatusColor(ShoppingListStatus status) {
     switch (status) {
-      case ShoppingListStatus.DRAFT:
+      case ShoppingListStatus.PLANNING:
         return Colors.orange;
       case ShoppingListStatus.SHOPPING:
         return Colors.blue;
@@ -393,12 +471,106 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
 
   String _getStatusText(ShoppingListStatus status) {
     switch (status) {
-      case ShoppingListStatus.DRAFT:
+      case ShoppingListStatus.PLANNING:
         return 'Đang lập';
       case ShoppingListStatus.SHOPPING:
         return 'Đang mua';
       case ShoppingListStatus.COMPLETED:
         return 'Hoàn thành';
     }
+  }
+
+  void _selectAll() {
+    final provider = context.read<ShoppingListProvider>();
+    final items = provider.currentShoppingList?.items ?? [];
+    setState(() {
+      if (_selectedItems.length == items.length) {
+        _selectedItems.clear();
+      } else {
+        _selectedItems.clear();
+        _selectedItems.addAll(items.map((item) => item.id));
+      }
+    });
+  }
+
+  void _handleBulkAction(String action, ShoppingListProvider provider) {
+    if (_selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng chọn ít nhất một món')),
+      );
+      return;
+    }
+
+    switch (action) {
+      case 'mark_bought':
+        _bulkMarkBought(provider, true);
+        break;
+      case 'mark_unbought':
+        _bulkMarkBought(provider, false);
+        break;
+      case 'delete':
+        _bulkDelete(provider);
+        break;
+    }
+  }
+
+  void _bulkMarkBought(ShoppingListProvider provider, bool isBought) async {
+    final items = provider.currentShoppingList?.items ?? [];
+    final selectedItemsList = items.where((item) => _selectedItems.contains(item.id)).toList();
+    
+    for (final item in selectedItemsList) {
+      if (item.isBought != isBought) {
+        await provider.toggleItemBought(item.id, isBought, version: item.version);
+      }
+    }
+    
+    setState(() {
+      _selectionMode = false;
+      _selectedItems.clear();
+    });
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Đã cập nhật ${selectedItemsList.length} món')),
+      );
+    }
+  }
+
+  void _bulkDelete(ShoppingListProvider provider) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Xác nhận xóa'),
+        content: Text('Bạn có chắc muốn xóa ${_selectedItems.length} món đã chọn?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final selectedIds = _selectedItems.toList();
+              
+              for (final itemId in selectedIds) {
+                await provider.deleteShoppingItem(itemId);
+              }
+              
+              setState(() {
+                _selectionMode = false;
+                _selectedItems.clear();
+              });
+              
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Đã xóa ${selectedIds.length} món')),
+                );
+              }
+            },
+            child: const Text('Xóa', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -12,7 +12,7 @@ ShoppingList _$ShoppingListFromJson(Map<String, dynamic> json) => ShoppingList(
       description: json['description'] as String?,
       familyId: (json['familyId'] as num).toInt(),
       status: $enumDecode(_$ShoppingListStatusEnumMap, json['status'],
-          unknownValue: ShoppingListStatus.DRAFT),
+          unknownValue: ShoppingListStatus.PLANNING),
       version: (json['version'] as num?)?.toInt(),
       createdBy: json['createdBy'] == null
           ? null
@@ -47,7 +47,7 @@ Map<String, dynamic> _$ShoppingListToJson(ShoppingList instance) =>
     };
 
 const _$ShoppingListStatusEnumMap = {
-  ShoppingListStatus.DRAFT: 'DRAFT',
+  ShoppingListStatus.PLANNING: 'PLANNING',
   ShoppingListStatus.SHOPPING: 'SHOPPING',
   ShoppingListStatus.COMPLETED: 'COMPLETED',
 };

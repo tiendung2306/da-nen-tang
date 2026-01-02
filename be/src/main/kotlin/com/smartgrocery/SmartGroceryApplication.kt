@@ -11,4 +11,3 @@ class SmartGroceryApplication
 fun main(args: Array<String>) {
     runApplication<SmartGroceryApplication>(*args)
 }
-
