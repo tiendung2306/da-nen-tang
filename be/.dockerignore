@@ -1,0 +1,28 @@
+# Gradle
+.gradle
+build
+!build/libs
+
+# IDE
+.idea
+*.iml
+.vscode
+
+# Environment
+.env
+*.log
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Test
+src/test
+
+# Misc
+tmp
+temp

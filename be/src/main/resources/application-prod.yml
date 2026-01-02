@@ -1,0 +1,63 @@
+# Production configuration
+spring:
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/smartgrocery}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # Không tự động tạo/sửa schema trong production
+    show-sql: false  # Tắt SQL logging trong production
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: ${JWT_ACCESS_EXPIRATION:3600000}  # 1 hour
+  refresh-token-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days
+
+# Fireworks AI Configuration
+fireworks:
+  ai:
+    api-key: ${FIREWORKS_API_KEY}
+    base-url: ${FIREWORKS_BASE_URL:https://api.fireworks.ai/inference/v1}
+    model: ${FIREWORKS_MODEL:accounts/fireworks/models/llama-v3p3-70b-instruct}
+
+# Logging
+logging:
+  level:
+    root: INFO
+    com.smartgrocery: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+  file:
+    name: /var/log/smart-grocery/application.log
+    max-size: 10MB
+    max-history: 30
+
+# Actuator endpoints for monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

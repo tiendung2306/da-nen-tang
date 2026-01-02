@@ -1,34 +1,11 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_boilerplate/config/environment.dart';
 
 class ApiConfig {
-  static String get baseUrl {
-    const String apiVersion = '/v1';
-    String base;
-
-    if (kIsWeb) {
-      base = 'http://127.0.0.1:8080/api';
-    } else {
-      if (Platform.isAndroid) {
-        base = 'http://10.0.2.2:8080/api';
-      } else {
-        base = 'http://127.0.0.1:8080/api';
-      }
-    }
-    return base + apiVersion;
-  }
+  /// Get base URL from environment configuration
+  static String get baseUrl => AppConfig.apiBaseUrl;
 
   /// Base URL without API version for file serving
-  static String get fileBaseUrl {
-    if (kIsWeb) {
-      return 'http://127.0.0.1:8080';
-    } else {
-      if (Platform.isAndroid) {
-        return 'http://10.0.2.2:8080';
-      } else {
-        return 'http://127.0.0.1:8080';
-      }
-    }
+  static String get fileBaseUrl => AppConfig.fileBaseUrl;
   }
 
   /// Build full URL for an image path returned from API
