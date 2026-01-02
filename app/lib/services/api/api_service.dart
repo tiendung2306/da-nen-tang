@@ -23,7 +23,6 @@ class ApiService {
         final token = await SharedPref.getToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
-          print('🔑 TOKEN: $token'); // DEBUG: In token ra console
         }
         return handler.next(options);
       },

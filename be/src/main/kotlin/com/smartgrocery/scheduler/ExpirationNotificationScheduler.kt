@@ -19,15 +19,6 @@ class ExpirationNotificationScheduler(
     private val logger = LoggerFactory.getLogger(ExpirationNotificationScheduler::class.java)
 
     /**
-     * Manual trigger for testing - can be called from controller
-     */
-    fun triggerExpirationCheck(): String {
-        logger.info("Manual trigger: Starting expiration check...")
-        checkExpiringItems()
-        return "Expiration check completed"
-    }
-
-    /**
      * Runs every day at 8:00 AM to check for expiring items
      */
     @Scheduled(cron = "0 0 8 * * *")

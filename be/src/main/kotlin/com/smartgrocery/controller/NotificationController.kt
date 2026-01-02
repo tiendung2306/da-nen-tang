@@ -2,7 +2,6 @@ package com.smartgrocery.controller
 
 import com.smartgrocery.dto.common.ApiResponse
 import com.smartgrocery.dto.notification.*
-import com.smartgrocery.scheduler.ExpirationNotificationScheduler
 import com.smartgrocery.service.UserNotificationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -16,8 +15,7 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/v1/notifications")
 @Tag(name = "Notifications", description = "Notification management APIs")
 class NotificationController(
-    private val userNotificationService: UserNotificationService,
-    private val expirationNotificationScheduler: ExpirationNotificationScheduler
+    private val userNotificationService: UserNotificationService
 ) {
 
     @GetMapping
@@ -69,12 +67,5 @@ class NotificationController(
     ): ResponseEntity<ApiResponse<Unit>> {
         userNotificationService.deleteNotification(id)
         return ResponseEntity.ok(ApiResponse.success(Unit))
-    }
-
-    @PostMapping("/trigger-expiration-check")
-    @Operation(summary = "Manually trigger expiration check for testing")
-    fun triggerExpirationCheck(): ResponseEntity<ApiResponse<Map<String, String>>> {
-        val result = expirationNotificationScheduler.triggerExpirationCheck()
-        return ResponseEntity.ok(ApiResponse.success(mapOf("status" to result)))
     }
 }
