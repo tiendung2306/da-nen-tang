@@ -18,12 +18,16 @@ class MealPlanPage extends StatefulWidget {
 
 class _MealPlanPageState extends State<MealPlanPage> {
   DateTime _selectedDate = DateTime.now();
-  final PageController _pageController = PageController(initialPage: 500);
+  late PageController _pageController;
   int _currentPageIndex = 500;
+  
+  // Track the initial page index based on today's date
+  static const int _basePageIndex = 500;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _basePageIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
@@ -44,7 +48,17 @@ class _MealPlanPageState extends State<MealPlanPage> {
   }
 
   DateTime _getDateFromPageIndex(int index) {
-    return DateTime.now().add(Duration(days: index - 500));
+    // Base date is today at page index 500
+    final today = DateTime.now();
+    final baseDate = DateTime(today.year, today.month, today.day);
+    return baseDate.add(Duration(days: index - _basePageIndex));
+  }
+  
+  int _getPageIndexFromDate(DateTime date) {
+    final today = DateTime.now();
+    final baseDate = DateTime(today.year, today.month, today.day);
+    final targetDate = DateTime(date.year, date.month, date.day);
+    return _basePageIndex + targetDate.difference(baseDate).inDays;
   }
 
   @override
@@ -55,6 +69,9 @@ class _MealPlanPageState extends State<MealPlanPage> {
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          _buildFamilySelector(),
+        ],
       ),
       body: Column(
         children: [
@@ -82,11 +99,14 @@ class _MealPlanPageState extends State<MealPlanPage> {
                 return PageView.builder(
                   controller: _pageController,
                   onPageChanged: (index) {
-                    setState(() {
-                      _currentPageIndex = index;
-                      _selectedDate = _getDateFromPageIndex(index);
-                    });
-                    _loadDataForDate(_selectedDate);
+                    final newDate = _getDateFromPageIndex(index);
+                    if (_currentPageIndex != index) {
+                      setState(() {
+                        _currentPageIndex = index;
+                        _selectedDate = newDate;
+                      });
+                      _loadDataForDate(newDate);
+                    }
                   },
                   itemBuilder: (context, index) {
                     return _buildDayView(provider);
@@ -102,6 +122,72 @@ class _MealPlanPageState extends State<MealPlanPage> {
         backgroundColor: Colors.orange,
         child: const Icon(Icons.add, color: Colors.white),
       ),
+    );
+  }
+
+  Widget _buildFamilySelector() {
+    return Consumer<FamilyProvider>(
+      builder: (context, familyProvider, child) {
+        final families = familyProvider.families;
+        final selectedFamily = familyProvider.selectedFamily;
+        
+        if (families.isEmpty || selectedFamily == null) {
+          return const SizedBox.shrink();
+        }
+        
+        if (families.length == 1) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.family_restroom, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  selectedFamily.name,
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return PopupMenuButton<int>(
+          onSelected: (familyId) {
+            final family = families.firstWhere((f) => f.id == familyId);
+            familyProvider.setSelectedFamily(family);
+            _loadData();
+          },
+          itemBuilder: (context) => families.map((family) => PopupMenuItem<int>(
+            value: family.id,
+            child: Row(
+              children: [
+                if (family.id == selectedFamily.id)
+                  const Icon(Icons.check, color: Colors.orange, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(family.name)),
+              ],
+            ),
+          )).toList(),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.family_restroom, size: 18),
+                const SizedBox(width: 4),
+                Text(
+                  selectedFamily.name,
+                  style: const TextStyle(fontSize: 14),
+                ),
+                const Icon(Icons.arrow_drop_down, size: 20),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -181,10 +267,11 @@ class _MealPlanPageState extends State<MealPlanPage> {
 
         return GestureDetector(
           onTap: () {
+            final newIndex = _getPageIndexFromDate(date);
             setState(() {
               _selectedDate = date;
+              _currentPageIndex = newIndex;
             });
-            final newIndex = 500 + date.difference(DateTime.now()).inDays;
             _pageController.jumpToPage(newIndex);
             _loadDataForDate(date);
           },
@@ -762,10 +849,11 @@ class _MealPlanPageState extends State<MealPlanPage> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (picked != null) {
+      final newIndex = _getPageIndexFromDate(picked);
       setState(() {
         _selectedDate = picked;
+        _currentPageIndex = newIndex;
       });
-      final newIndex = 500 + picked.difference(DateTime.now()).inDays;
       _pageController.jumpToPage(newIndex);
       _loadDataForDate(picked);
     }

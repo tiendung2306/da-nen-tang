@@ -29,9 +29,17 @@ class MealPlanService(
         val currentUser = getCurrentUser()
         checkFamilyMembership(request.familyId, currentUser.id)
 
-        // Check if plan already exists
-        if (mealPlanRepository.existsByFamilyIdAndDateAndMealType(request.familyId, request.date, request.mealType)) {
-            throw ConflictException(ErrorCode.MEAL_PLAN_ALREADY_EXISTS)
+        // Check if plan already exists - if so, add items to existing plan instead of throwing error
+        val existingPlan = mealPlanRepository.findByFamilyIdAndDateAndMealTypeWithItems(request.familyId, request.date, request.mealType)
+        if (existingPlan != null) {
+            // Add items to existing plan instead of creating new one
+            val maxOrder = mealItemRepository.findMaxOrderIndex(existingPlan.id!!) ?: -1
+            val items = request.items.mapIndexed { index, itemRequest ->
+                createMealItem(existingPlan, itemRequest, maxOrder + 1 + index)
+            }
+            mealItemRepository.saveAll(items)
+            existingPlan.items.addAll(items)
+            return toDetailResponse(existingPlan)
         }
 
         val family = familyRepository.findById(request.familyId)
