@@ -449,8 +449,16 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
         .where((list) => _selectedLists.contains(list.id))
         .toList();
     
+    int successCount = 0;
+    int failureCount = 0;
+    
     for (final list in selectedListObjects) {
-      await provider.updateShoppingListStatus(list.id, newStatus, version: list.version ?? 0);
+      final success = await provider.updateShoppingListStatus(list.id, newStatus, version: list.version ?? 0);
+      if (success) {
+        successCount++;
+      } else {
+        failureCount++;
+      }
     }
     
     setState(() {
@@ -459,9 +467,32 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
     });
     
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Đã cập nhật ${selectedListObjects.length} danh sách')),
-      );
+      if (failureCount == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã cập nhật $successCount danh sách'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Đã cập nhật $successCount danh sách. $failureCount thất bại (có thể do conflict)'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Tải lại',
+              textColor: Colors.white,
+              onPressed: () {
+                final familyId = context.read<FamilyProvider>().selectedFamily?.id;
+                if (familyId != null) {
+                  provider.fetchShoppingLists(familyId);
+                }
+              },
+            ),
+          ),
+        );
+      }
     }
   }
 

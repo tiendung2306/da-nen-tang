@@ -102,8 +102,8 @@ class ShoppingListProvider extends BaseProvider {
     }
   }
 
-  // Update shopping list status
-  Future<void> updateShoppingListStatus(int listId, ShoppingListStatus status, {required int version}) async {
+  // Update shopping list status with retry on conflict
+  Future<bool> updateShoppingListStatus(int listId, ShoppingListStatus status, {required int version, int retryCount = 0}) async {
     _errorMessage = null;
     try {
       final updatedList = await _apiService.updateShoppingList(listId, {
@@ -118,19 +118,39 @@ class ShoppingListProvider extends BaseProvider {
         _currentShoppingList = updatedList;
       }
       notifyListeners();
+      return true;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+      
+      // Check if it's a conflict/concurrency error
+      if ((errorMsg.contains('conflict') || errorMsg.contains('concurrency') || errorMsg.contains('409')) && retryCount < 2) {
+        // Retry with fresh data - fetch latest version
+        try {
+          await fetchShoppingListDetails(listId);
+          final freshList = _currentShoppingList;
+          if (freshList != null && freshList.id == listId) {
+            // Retry with new version
+            return await updateShoppingListStatus(listId, status, version: freshList.version ?? 0, retryCount: retryCount + 1);
+          }
+        } catch (_) {
+          // If refresh fails, show original error
+        }
+      }
+      
+      _errorMessage = errorMsg;
       notifyListeners();
+      return false;
     }
   }
 
-  // Update shopping list (name, description, assignedTo)
+  // Update shopping list (name, description, assignedTo) with retry on conflict
   Future<ShoppingList?> updateShoppingList({
     required int listId,
     required int version,
     String? name,
     String? description,
     int? assignedToId,
+    int retryCount = 0,
   }) async {
     _errorMessage = null;
     try {
@@ -151,7 +171,31 @@ class ShoppingListProvider extends BaseProvider {
       notifyListeners();
       return updatedList;
     } catch (e) {
-      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+      
+      // Check if it's a conflict/concurrency error
+      if ((errorMsg.contains('conflict') || errorMsg.contains('concurrency') || errorMsg.contains('409')) && retryCount < 2) {
+        // Retry with fresh data
+        try {
+          await fetchShoppingListDetails(listId);
+          final freshList = _currentShoppingList;
+          if (freshList != null && freshList.id == listId) {
+            // Retry with new version
+            return await updateShoppingList(
+              listId: listId,
+              version: freshList.version ?? 0,
+              name: name,
+              description: description,
+              assignedToId: assignedToId,
+              retryCount: retryCount + 1,
+            );
+          }
+        } catch (_) {
+          // If refresh fails, show original error
+        }
+      }
+      
+      _errorMessage = errorMsg;
       notifyListeners();
       return null;
     }

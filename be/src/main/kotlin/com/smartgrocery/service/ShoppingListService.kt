@@ -90,9 +90,36 @@ class ShoppingListService(
         checkFamilyMembership(list.family.id!!, currentUser.id)
         checkVersion(list.version, request.version)
 
+        val oldStatus = list.status
+
         request.name?.let { list.name = it }
         request.description?.let { list.description = it }
-        request.status?.let { list.status = it }
+        request.status?.let { newStatus ->
+            list.status = newStatus
+            
+            // Handle status change logic for shopping items
+            when {
+                // When marking as COMPLETED -> mark all items as bought (100%)
+                newStatus == ShoppingListStatus.COMPLETED && oldStatus != ShoppingListStatus.COMPLETED -> {
+                    list.items.forEach { item ->
+                        if (!item.isBought) {
+                            item.isBought = true
+                            val user = userRepository.findById(currentUser.id)
+                                .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }
+                            item.boughtBy = user
+                        }
+                    }
+                }
+                // When changing from COMPLETED to PLANNING or SHOPPING -> mark all items as not bought (0%)
+                oldStatus == ShoppingListStatus.COMPLETED && 
+                (newStatus == ShoppingListStatus.PLANNING || newStatus == ShoppingListStatus.SHOPPING) -> {
+                    list.items.forEach { item ->
+                        item.isBought = false
+                        item.boughtBy = null
+                    }
+                }
+            }
+        }
         request.assignedToId?.let { assignedToId ->
             val assignedUser = userRepository.findById(assignedToId)
                 .orElseThrow { ResourceNotFoundException(ErrorCode.USER_NOT_FOUND) }

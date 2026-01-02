@@ -540,13 +540,39 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
     );
   }
 
-  void _handleMenuAction(String action, ShoppingListProvider provider, ShoppingList list) {
+  void _handleMenuAction(String action, ShoppingListProvider provider, ShoppingList list) async {
     switch (action) {
       case 'start':
-        provider.updateShoppingListStatus(list.id, ShoppingListStatus.SHOPPING, version: list.version ?? 0);
+        final success = await provider.updateShoppingListStatus(list.id, ShoppingListStatus.SHOPPING, version: list.version ?? 0);
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể cập nhật trạng thái. ${provider.errorMessage ?? "Vui lòng thử lại"}'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Tải lại',
+                textColor: Colors.white,
+                onPressed: () => _loadData(),
+              ),
+            ),
+          );
+        }
         break;
       case 'complete':
-        provider.updateShoppingListStatus(list.id, ShoppingListStatus.COMPLETED, version: list.version ?? 0);
+        final success = await provider.updateShoppingListStatus(list.id, ShoppingListStatus.COMPLETED, version: list.version ?? 0);
+        if (!success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Không thể cập nhật trạng thái. ${provider.errorMessage ?? "Vui lòng thử lại"}'),
+              backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'Tải lại',
+                textColor: Colors.white,
+                onPressed: () => _loadData(),
+              ),
+            ),
+          );
+        }
         break;
       case 'delete':
         showDialog(
