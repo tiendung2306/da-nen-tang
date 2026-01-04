@@ -52,7 +52,9 @@ class _HomePageState extends State<HomePage> {
     final selectedFamily = context.read<FamilyProvider>().selectedFamily;
     if (selectedFamily != null) {
       context.read<FridgeProvider>().fetchStatistics(selectedFamily.id);
-      context.read<ShoppingListProvider>().fetchActiveShoppingLists(selectedFamily.id);
+      context
+          .read<ShoppingListProvider>()
+          .fetchActiveShoppingLists(selectedFamily.id);
     }
   }
 
@@ -60,7 +62,7 @@ class _HomePageState extends State<HomePage> {
     final hour = DateTime.now().hour;
     final random = Random();
     List<String> greetings;
-    
+
     if (hour >= 5 && hour < 12) {
       // Buổi sáng
       greetings = [
@@ -98,11 +100,12 @@ class _HomePageState extends State<HomePage> {
         'Chúc bạn buổi tối ấm áp bên gia đình',
       ];
     }
-    
+
     return greetings[random.nextInt(greetings.length)];
   }
 
-  Widget _buildSummaryItem(String label, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+      String label, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, color: color, size: 28),
@@ -129,20 +132,33 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildLocationBreakdown(Map<String, int> itemsByLocation) {
     final locations = {
-      'FREEZER': {'name': 'Ngăn đông', 'icon': Icons.ac_unit, 'color': Colors.blue},
-      'COOLER': {'name': 'Ngăn mát', 'icon': Icons.kitchen, 'color': Colors.cyan},
-      'PANTRY': {'name': 'Kệ bếp', 'icon': Icons.shelves, 'color': Colors.brown},
+      'FREEZER': {
+        'name': 'Ngăn đông',
+        'icon': Icons.ac_unit,
+        'color': Colors.blue
+      },
+      'COOLER': {
+        'name': 'Ngăn mát',
+        'icon': Icons.kitchen,
+        'color': Colors.cyan
+      },
+      'PANTRY': {
+        'name': 'Kệ bếp',
+        'icon': Icons.shelves,
+        'color': Colors.brown
+      },
     };
 
     return Column(
       children: itemsByLocation.entries.map((entry) {
         final locationKey = entry.key.toUpperCase();
         final count = entry.value;
-        final locationInfo = locations[locationKey] ?? {
-          'name': entry.key,
-          'icon': Icons.inventory_2,
-          'color': Colors.grey,
-        };
+        final locationInfo = locations[locationKey] ??
+            {
+              'name': entry.key,
+              'icon': Icons.inventory_2,
+              'color': Colors.grey,
+            };
 
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
@@ -177,7 +193,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: (locationInfo['color'] as Color).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(16),
@@ -205,14 +222,32 @@ class _HomePageState extends State<HomePage> {
     final fridgeStats = context.watch<FridgeProvider>().statistics;
     final shoppingLists = context.watch<ShoppingListProvider>().shoppingLists;
 
+    // Check if user is admin
+    final isAdmin = userInfo?.roles?.contains('ADMIN') ?? false;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đi Chợ Tiện Lợi'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         elevation: 0,
-        actions: const [
-          NotificationBadge(iconColor: Colors.white),
+        actions: [
+          if (isAdmin)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Center(
+                child: TextButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/admin'),
+                  icon: const Icon(Icons.admin_panel_settings,
+                      color: Colors.white),
+                  label: const Text(
+                    'Admin',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          const NotificationBadge(iconColor: Colors.white),
         ],
       ),
       body: userInfo == null
@@ -246,7 +281,8 @@ class _HomePageState extends State<HomePage> {
                         const SizedBox(height: 8),
                         if (selectedFamily != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20),
@@ -254,7 +290,8 @@ class _HomePageState extends State<HomePage> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.home, size: 16, color: Colors.white),
+                                const Icon(Icons.home,
+                                    size: 16, color: Colors.white),
                                 const SizedBox(width: 6),
                                 Text(
                                   selectedFamily.name,
@@ -297,7 +334,8 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.green,
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const ShoppingListPage()),
+                                  MaterialPageRoute(
+                                      builder: (_) => const ShoppingListPage()),
                                 ),
                               ),
                             ),
@@ -309,7 +347,8 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.orange,
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const MealPlanPage()),
+                                  MaterialPageRoute(
+                                      builder: (_) => const MealPlanPage()),
                                 ),
                               ),
                             ),
@@ -325,7 +364,8 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.teal,
                                 onTap: () => Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const ProductPage()),
+                                  MaterialPageRoute(
+                                      builder: (_) => const ProductPage()),
                                 ),
                               ),
                             ),
@@ -348,7 +388,10 @@ class _HomePageState extends State<HomePage> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Colors.blue.shade100, Colors.blue.shade50],
+                              colors: [
+                                Colors.blue.shade100,
+                                Colors.blue.shade50
+                              ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
@@ -362,7 +405,8 @@ class _HomePageState extends State<HomePage> {
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.lightbulb, color: Colors.amber, size: 28),
+                                child: const Icon(Icons.lightbulb,
+                                    color: Colors.amber, size: 28),
                               ),
                               const SizedBox(width: 12),
                               const Expanded(
@@ -409,12 +453,13 @@ class _HomePageState extends State<HomePage> {
                                 icon: const Icon(Icons.refresh, size: 18),
                                 label: const Text('Làm mới'),
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 8),
                                 ),
                               ),
                           ],
                         ),
-                        
+
                         // Summary card
                         if (fridgeStats != null)
                           Container(
@@ -427,7 +472,8 @@ class _HomePageState extends State<HomePage> {
                                 end: Alignment.bottomRight,
                               ),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.green[200]!, width: 1.5),
+                              border: Border.all(
+                                  color: Colors.green[200]!, width: 1.5),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -438,14 +484,20 @@ class _HomePageState extends State<HomePage> {
                                   Icons.inventory_2,
                                   Colors.green[700]!,
                                 ),
-                                Container(width: 1, height: 40, color: Colors.green[300]),
+                                Container(
+                                    width: 1,
+                                    height: 40,
+                                    color: Colors.green[300]),
                                 _buildSummaryItem(
                                   'Đang dùng',
                                   fridgeStats.activeItems.toString(),
                                   Icons.check_circle,
                                   Colors.blue[700]!,
                                 ),
-                                Container(width: 1, height: 40, color: Colors.green[300]),
+                                Container(
+                                    width: 1,
+                                    height: 40,
+                                    color: Colors.green[300]),
                                 _buildSummaryItem(
                                   'Cần chú ý',
                                   '${fridgeStats.expiringSoonItems + fridgeStats.expiredItems}',
@@ -455,7 +507,7 @@ class _HomePageState extends State<HomePage> {
                               ],
                             ),
                           ),
-                        
+
                         const SizedBox(height: 12),
                         // Row 1: Fridge stats
                         Row(
@@ -464,7 +516,8 @@ class _HomePageState extends State<HomePage> {
                               child: _StatCard(
                                 icon: Icons.kitchen,
                                 label: 'Thực phẩm\ntrong tủ',
-                                value: fridgeStats?.activeItems.toString() ?? '--',
+                                value:
+                                    fridgeStats?.activeItems.toString() ?? '--',
                                 color: Colors.teal,
                                 onTap: () {
                                   // TODO: Navigate to Fridge page
@@ -476,7 +529,9 @@ class _HomePageState extends State<HomePage> {
                               child: _StatCard(
                                 icon: Icons.warning_amber,
                                 label: 'Sắp hết\nhạn',
-                                value: fridgeStats?.expiringSoonItems.toString() ?? '--',
+                                value:
+                                    fridgeStats?.expiringSoonItems.toString() ??
+                                        '--',
                                 color: Colors.orange,
                                 onTap: () {
                                   // TODO: Navigate to Expiring Items page
@@ -488,7 +543,8 @@ class _HomePageState extends State<HomePage> {
                               child: _StatCard(
                                 icon: Icons.delete_outline,
                                 label: 'Đã hết\nhạn',
-                                value: fridgeStats?.expiredItems.toString() ?? '--',
+                                value: fridgeStats?.expiredItems.toString() ??
+                                    '--',
                                 color: Colors.red,
                                 onTap: () {
                                   // TODO: Navigate to Expired Items
@@ -511,7 +567,8 @@ class _HomePageState extends State<HomePage> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => const ShoppingListPage(),
+                                      builder: (context) =>
+                                          const ShoppingListPage(),
                                     ),
                                   );
                                 },
@@ -522,7 +579,8 @@ class _HomePageState extends State<HomePage> {
                               child: _StatCard(
                                 icon: Icons.inventory_2_outlined,
                                 label: 'Tổng cộng\n(kể cả hết hạn)',
-                                value: fridgeStats?.totalItems.toString() ?? '--',
+                                value:
+                                    fridgeStats?.totalItems.toString() ?? '--',
                                 color: Colors.purple,
                                 onTap: null,
                               ),
@@ -542,7 +600,8 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 child: Column(
                                   children: [
-                                    Icon(Icons.more_horiz, color: Colors.grey[400], size: 24),
+                                    Icon(Icons.more_horiz,
+                                        color: Colors.grey[400], size: 24),
                                     const SizedBox(height: 8),
                                     Text(
                                       '---',
@@ -567,9 +626,11 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ],
                         ),
-                        
+
                         // Breakdown by location
-                        if (fridgeStats != null && fridgeStats.itemsByLocation != null && fridgeStats.itemsByLocation!.isNotEmpty) ...[
+                        if (fridgeStats != null &&
+                            fridgeStats.itemsByLocation != null &&
+                            fridgeStats.itemsByLocation!.isNotEmpty) ...[
                           const SizedBox(height: 24),
                           const Text(
                             'Phân bổ theo vị trí 📍',
@@ -679,7 +740,7 @@ class _StatCard extends StatelessWidget {
             Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
             // Shimmer effect khi đang load
-            value == '--' 
+            value == '--'
                 ? SizedBox(
                     width: 40,
                     height: 24,

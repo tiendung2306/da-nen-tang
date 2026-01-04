@@ -17,6 +17,9 @@ import 'providers/shopping_list_provider.dart';
 import 'providers/meal_plan_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/product_provider.dart';
+import 'providers/admin_user_provider.dart';
+import 'providers/admin_category_provider.dart';
+import 'providers/admin_product_provider.dart';
 import 'routes.dart';
 import 'services/locator.dart';
 import 'services/shared_pref/shared_pref.dart';
@@ -43,6 +46,9 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => MealPlanProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => AdminUserProvider()),
+        ChangeNotifierProvider(create: (_) => AdminCategoryProvider()),
+        ChangeNotifierProvider(create: (_) => AdminProductProvider()),
       ],
       child: const MyApp(),
     ),

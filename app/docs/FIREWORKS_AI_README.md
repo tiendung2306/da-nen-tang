@@ -56,7 +56,7 @@ cd be
 ./gradlew bootRun
 ```
 
-Backend sẽ chạy tại: http://localhost:8080
+Backend chạy tại: https://da-nen-tang-be.onrender.com
 
 ### Bước 4: Flutter App tự động kết nối
 
