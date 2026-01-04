@@ -75,7 +75,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
             title: Text(_selectionMode 
                 ? '${_selectedItems.length} đã chọn' 
                 : shoppingList?.name ?? 'Chi tiết danh sách'),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.orange,
             foregroundColor: Colors.white,
             leading: _selectionMode
                 ? IconButton(
@@ -131,7 +131,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
           floatingActionButton: shoppingList != null && shoppingList.status != ShoppingListStatus.COMPLETED
               ? FloatingActionButton(
                   onPressed: () => _showAddItemDialog(),
-                  backgroundColor: Colors.green,
+                  backgroundColor: Colors.orange,
                   child: const Icon(Icons.add, color: Colors.white),
                 )
               : null,
@@ -473,7 +473,7 @@ class _ShoppingListDetailPageState extends State<ShoppingListDetailPage> {
                   ElevatedButton(
                     onPressed: _addItem,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.orange,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: const Text('Thêm món', style: TextStyle(color: Colors.white)),

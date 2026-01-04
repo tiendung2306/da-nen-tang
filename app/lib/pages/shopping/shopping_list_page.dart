@@ -64,7 +64,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
         title: Text(_selectionMode 
             ? '${_selectedLists.length} đã chọn' 
             : 'Danh sách mua sắm'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,
         leading: _selectionMode
@@ -210,7 +210,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
             MaterialPageRoute(builder: (context) => const CreateShoppingListPage()),
           ).then((_) => _loadData());
         },
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.orange,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -239,7 +239,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                 final isSelected = family.id == familyProvider.selectedFamily?.id;
                 return ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isSelected ? Colors.green : Colors.grey[300],
+                    backgroundColor: isSelected ? Colors.orange : Colors.grey[300],
                     child: Icon(
                       Icons.group,
                       color: isSelected ? Colors.white : Colors.grey[600],
@@ -249,11 +249,11 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                     family.name,
                     style: TextStyle(
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.green : null,
+                      color: isSelected ? Colors.orange : null,
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      ? const Icon(Icons.check_circle, color: Colors.orange)
                       : null,
                   onTap: () {
                     familyProvider.setSelectedFamily(family);
@@ -471,7 +471,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Đã cập nhật $successCount danh sách'),
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.orange,
           ),
         );
       } else {
@@ -593,7 +593,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                         children: [
                           CircleAvatar(
                             radius: 12,
-                            backgroundColor: Colors.green.withOpacity(0.2),
+                            backgroundColor: Colors.orange.withOpacity(0.2),
                             backgroundImage: member.avatarUrl != null
                                 ? NetworkImage(member.avatarUrl!)
                                 : null,
@@ -602,7 +602,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                                     member.fullName.isNotEmpty
                                         ? member.fullName[0].toUpperCase()
                                         : '?',
-                                    style: const TextStyle(fontSize: 10, color: Colors.green),
+                                    style: const TextStyle(fontSize: 10, color: Colors.orange),
                                   )
                                 : null,
                           ),
@@ -659,7 +659,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Cập nhật thành công'),
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.orange,
                     ),
                   );
                 } else if (mounted) {
@@ -671,7 +671,7 @@ class _ShoppingListPageState extends State<ShoppingListPage> with SingleTickerPr
                   );
                 }
               },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
               child: const Text('Lưu', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -712,7 +712,7 @@ class _ShoppingListCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: isSelected ? Colors.green.withOpacity(0.1) : null,
+      color: isSelected ? Colors.orange.withOpacity(0.1) : null,
       child: InkWell(
         onTap: onTap,
         onLongPress: onLongPress,
@@ -728,7 +728,7 @@ class _ShoppingListCard extends StatelessWidget {
                     Checkbox(
                       value: isSelected,
                       onChanged: (_) => onTap(),
-                      activeColor: Colors.green,
+                      activeColor: Colors.orange,
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -810,7 +810,7 @@ class _ShoppingListCard extends StatelessWidget {
                             _buildPersonChip(
                               Icons.assignment_ind_outlined,
                               'Phân công: ${shoppingList.assignedTo!.fullName ?? shoppingList.assignedTo!.email}',
-                              Colors.orange,
+                              Colors.green,
                             ),
                         ],
                       ),
@@ -934,7 +934,7 @@ class _ShoppingListCard extends StatelessWidget {
                   : (value) {
                       onItemToggle(item.id, value ?? false, item.version ?? 0);
                     },
-              activeColor: Colors.green,
+              activeColor: Colors.orange,
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
@@ -1035,7 +1035,7 @@ class _ShoppingListCard extends StatelessWidget {
       case ShoppingListStatus.SHOPPING:
         return Colors.blue;
       case ShoppingListStatus.COMPLETED:
-        return Colors.green;
+        return Colors.orange;
     }
   }
 

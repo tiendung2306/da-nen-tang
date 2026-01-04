@@ -71,7 +71,7 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tạo danh sách mới'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         actions: [
           TextButton(
@@ -421,7 +421,7 @@ class _CreateShoppingListPageState extends State<CreateShoppingListPage> {
                       Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.orange,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     child: const Text('Thêm', style: TextStyle(color: Colors.white)),

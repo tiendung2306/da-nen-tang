@@ -228,7 +228,7 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đi Chợ Tiện Lợi'),
-        backgroundColor: Colors.green,
+        backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -261,7 +261,7 @@ class _HomePageState extends State<HomePage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: const BoxDecoration(
-                      color: Colors.green,
+                      color: Colors.orange,
                       borderRadius: BorderRadius.only(
                         bottomLeft: Radius.circular(30),
                         bottomRight: Radius.circular(30),
@@ -331,7 +331,7 @@ class _HomePageState extends State<HomePage> {
                               child: _FeatureCard(
                                 icon: Icons.shopping_cart,
                                 title: 'Danh sách\nmua sắm',
-                                color: Colors.green,
+                                color: Colors.orange,
                                 onTap: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
@@ -467,13 +467,13 @@ class _HomePageState extends State<HomePage> {
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.green[50]!, Colors.green[100]!],
+                                colors: [Colors.orange[50]!, Colors.orange[100]!],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: Colors.green[200]!, width: 1.5),
+                                  color: Colors.orange[200]!, width: 1.5),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -482,12 +482,12 @@ class _HomePageState extends State<HomePage> {
                                   'Tổng số món',
                                   fridgeStats.totalItems.toString(),
                                   Icons.inventory_2,
-                                  Colors.green[700]!,
+                                  Colors.orange[700]!,
                                 ),
                                 Container(
                                     width: 1,
                                     height: 40,
-                                    color: Colors.green[300]),
+                                    color: Colors.orange[300]),
                                 _buildSummaryItem(
                                   'Đang dùng',
                                   fridgeStats.activeItems.toString(),
@@ -497,7 +497,7 @@ class _HomePageState extends State<HomePage> {
                                 Container(
                                     width: 1,
                                     height: 40,
-                                    color: Colors.green[300]),
+                                    color: Colors.orange[300]),
                                 _buildSummaryItem(
                                   'Cần chú ý',
                                   '${fridgeStats.expiringSoonItems + fridgeStats.expiredItems}',
