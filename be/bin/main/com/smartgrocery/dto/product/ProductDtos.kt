@@ -1,47 +1,23 @@
 package com.smartgrocery.dto.product
 
 import com.smartgrocery.dto.category.CategoryResponse
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.Positive
-import jakarta.validation.constraints.Size
 
+// DTO for creating product - image is uploaded separately via multipart
 data class CreateProductRequest(
-    @field:NotBlank(message = "Product name is required")
-    @field:Size(max = 200, message = "Product name must not exceed 200 characters")
     val name: String,
-
-    val imageUrl: String? = null,
-
-    @field:NotBlank(message = "Default unit is required")
-    @field:Size(max = 50, message = "Default unit must not exceed 50 characters")
     val defaultUnit: String,
-
-    @field:Positive(message = "Average shelf life must be positive")
     val avgShelfLife: Int? = null,
-
-    @field:Size(max = 500, message = "Description must not exceed 500 characters")
     val description: String? = null,
-
     val categoryIds: List<Long> = emptyList()
 )
 
+// DTO for updating product - image is uploaded separately via multipart
 data class UpdateProductRequest(
-    @field:Size(max = 200, message = "Product name must not exceed 200 characters")
     val name: String? = null,
-
-    val imageUrl: String? = null,
-
-    @field:Size(max = 50, message = "Default unit must not exceed 50 characters")
     val defaultUnit: String? = null,
-
-    @field:Positive(message = "Average shelf life must be positive")
     val avgShelfLife: Int? = null,
-
-    @field:Size(max = 500, message = "Description must not exceed 500 characters")
     val description: String? = null,
-
     val categoryIds: List<Long>? = null,
-
     val isActive: Boolean? = null
 )
 

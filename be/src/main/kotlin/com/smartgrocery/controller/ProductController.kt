@@ -6,13 +6,14 @@ import com.smartgrocery.dto.product.*
 import com.smartgrocery.service.ProductService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/api/v1/master-products")
@@ -59,26 +60,52 @@ class ProductController(
         return ResponseEntity.ok(ApiResponse.success(products))
     }
 
-    @PostMapping
+    @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create a new product (Admin only)")
+    @Operation(summary = "Create a new product with image upload (Admin only)")
     fun createProduct(
-        @Valid @RequestBody request: CreateProductRequest
+        @RequestParam name: String,
+        @RequestParam defaultUnit: String,
+        @RequestParam(required = false) avgShelfLife: Int?,
+        @RequestParam(required = false) description: String?,
+        @RequestParam(required = false) categoryIds: List<Long>?,
+        @RequestParam(required = false) image: MultipartFile?
     ): ResponseEntity<ApiResponse<ProductResponse>> {
-        val product = productService.createProduct(request)
+        val request = CreateProductRequest(
+            name = name,
+            defaultUnit = defaultUnit,
+            avgShelfLife = avgShelfLife,
+            description = description,
+            categoryIds = categoryIds ?: emptyList()
+        )
+        val product = productService.createProduct(request, image)
         return ResponseEntity
             .status(HttpStatus.CREATED)
             .body(ApiResponse.created(product))
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update a product (Admin only)")
+    @Operation(summary = "Update a product with image upload (Admin only)")
     fun updateProduct(
         @PathVariable id: Long,
-        @Valid @RequestBody request: UpdateProductRequest
+        @RequestParam(required = false) name: String?,
+        @RequestParam(required = false) defaultUnit: String?,
+        @RequestParam(required = false) avgShelfLife: Int?,
+        @RequestParam(required = false) description: String?,
+        @RequestParam(required = false) categoryIds: List<Long>?,
+        @RequestParam(required = false) isActive: Boolean?,
+        @RequestParam(required = false) image: MultipartFile?
     ): ResponseEntity<ApiResponse<ProductResponse>> {
-        val product = productService.updateProduct(id, request)
+        val request = UpdateProductRequest(
+            name = name,
+            defaultUnit = defaultUnit,
+            avgShelfLife = avgShelfLife,
+            description = description,
+            categoryIds = categoryIds,
+            isActive = isActive
+        )
+        val product = productService.updateProduct(id, request, image)
         return ResponseEntity.ok(ApiResponse.success(product, "Product updated successfully"))
     }
 

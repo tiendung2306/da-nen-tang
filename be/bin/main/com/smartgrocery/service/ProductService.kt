@@ -12,11 +12,13 @@ import com.smartgrocery.repository.MasterProductRepository
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 
 @Service
 class ProductService(
     private val productRepository: MasterProductRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val cloudinaryService: CloudinaryService
 ) {
 
     fun getAllProducts(pageable: Pageable): PageResponse<ProductResponse> {
@@ -41,7 +43,7 @@ class ProductService(
     }
 
     @Transactional
-    fun createProduct(request: CreateProductRequest): ProductResponse {
+    fun createProduct(request: CreateProductRequest, image: MultipartFile?): ProductResponse {
         if (productRepository.existsByName(request.name)) {
             throw ConflictException(ErrorCode.CONFLICT, "Product with this name already exists")
         }
@@ -52,9 +54,12 @@ class ProductService(
             mutableSetOf()
         }
 
+        // Upload image to Cloudinary if provided
+        val imageUrl = image?.let { cloudinaryService.uploadFile(it, "products") }
+
         val product = MasterProduct(
             name = request.name,
-            imageUrl = request.imageUrl,
+            imageUrl = imageUrl,
             defaultUnit = request.defaultUnit,
             avgShelfLife = request.avgShelfLife,
             description = request.description,
@@ -66,16 +71,24 @@ class ProductService(
     }
 
     @Transactional
-    fun updateProduct(id: Long, request: UpdateProductRequest): ProductResponse {
+    fun updateProduct(id: Long, request: UpdateProductRequest, image: MultipartFile?): ProductResponse {
         val product = productRepository.findByIdWithCategories(id)
             ?: throw ResourceNotFoundException(ErrorCode.PRODUCT_NOT_FOUND)
 
         request.name?.let { product.name = it }
-        request.imageUrl?.let { product.imageUrl = it }
         request.defaultUnit?.let { product.defaultUnit = it }
         request.avgShelfLife?.let { product.avgShelfLife = it }
         request.description?.let { product.description = it }
         request.isActive?.let { product.isActive = it }
+
+        // Update image if provided
+        image?.let {
+            // Delete old image from Cloudinary if exists
+            product.imageUrl?.let { oldUrl ->
+                cloudinaryService.deleteFile(oldUrl)
+            }
+            product.imageUrl = cloudinaryService.uploadFile(it, "products")
+        }
 
         request.categoryIds?.let { categoryIds ->
             val categories = if (categoryIds.isNotEmpty()) {
@@ -94,6 +107,9 @@ class ProductService(
     fun deleteProduct(id: Long) {
         val product = productRepository.findById(id)
             .orElseThrow { ResourceNotFoundException(ErrorCode.PRODUCT_NOT_FOUND) }
+        
+        // Note: We don't delete image on soft delete
+        // If you want to delete image, use hard delete or a separate endpoint
         
         // Soft delete
         product.isActive = false
