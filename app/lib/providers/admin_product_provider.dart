@@ -17,28 +17,40 @@ class AdminProductProvider extends ChangeNotifier {
   String? get error => _error;
 
   Product _mapProduct(api_models.Product apiProduct) {
-    // The price is not available in the api_model.Product, so we have to get creative.
-    // For now, we'll assume it might be part of the raw JSON, but since we can't
-    // access it here, we'll default to 0.0. The create/update methods send price.
+    // Map from the API Product model to the UI Product model
     return Product(
       id: apiProduct.id,
       name: apiProduct.name,
+      defaultUnit: apiProduct.defaultUnit,
+      avgShelfLife: apiProduct.avgShelfLife,
       description: apiProduct.description,
       imageUrl: apiProduct.imageUrl,
-      price: 0.0, // Defaulting because it's not in the api_model.Product
-      quantity: null, // Not in api model
-      categoryId: apiProduct.categories?.isNotEmpty == true ? apiProduct.categories!.first.id : null,
-      categoryName: apiProduct.categories?.isNotEmpty == true ? apiProduct.categories!.first.name : null,
+      categoryId: apiProduct.categories?.isNotEmpty == true
+          ? apiProduct.categories!.first.id
+          : null,
       isActive: apiProduct.isActive,
     );
   }
 
-  Category _mapCategory(api_models.Category apiCategory) {
+  Product _mapAdminProduct(dynamic adminProduct) {
+    return Product(
+      id: adminProduct?.id as int?,
+      name: adminProduct?.name as String?,
+      defaultUnit: adminProduct?.defaultUnit as String?,
+      avgShelfLife: adminProduct?.avgShelfLife as int?,
+      description: adminProduct?.description as String?,
+      imageUrl: adminProduct?.imageUrl as String?,
+      categoryId: adminProduct?.categoryId as int?,
+      isActive: adminProduct?.isActive as bool?,
+    );
+  }
+
+  Category _mapCategory(dynamic apiCategory) {
     return Category(
-      id: apiCategory.id,
-      name: apiCategory.name,
-      description: apiCategory.description,
-      isActive: true, // Assuming default
+      id: apiCategory?.id as int?,
+      name: apiCategory?.name as String?,
+      description: apiCategory?.description as String?,
+      isActive: apiCategory?.isActive as bool? ?? true, // Assuming default
     );
   }
 
@@ -74,14 +86,15 @@ class AdminProductProvider extends ChangeNotifier {
   }
 
   /// Tạo sản phẩm mới
-  Future<Product> createProduct(Map<String, dynamic> data) async {
+  Future<Product> createProduct(Map<String, dynamic> data,
+      {dynamic image}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final newApiProduct = await _apiService.createProduct(data);
-      final newProduct = _mapProduct(newApiProduct);
+      final newApiProduct = await _apiService.createProduct(data, image: image);
+      final newProduct = _mapAdminProduct(newApiProduct);
       _products.add(newProduct);
       _isLoading = false;
       notifyListeners();
@@ -95,14 +108,16 @@ class AdminProductProvider extends ChangeNotifier {
   }
 
   /// Cập nhật sản phẩm
-  Future<Product> updateProduct(int id, Map<String, dynamic> data) async {
+  Future<Product> updateProduct(int id, Map<String, dynamic> data,
+      {dynamic image}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final updatedApiProduct = await _apiService.updateProduct(id, data);
-      final updatedProduct = _mapProduct(updatedApiProduct);
+      final updatedApiProduct =
+          await _apiService.updateProduct(id, data, image: image);
+      final updatedProduct = _mapAdminProduct(updatedApiProduct);
       final index = _products.indexWhere((p) => p.id == id);
       if (index != -1) {
         _products[index] = updatedProduct;

@@ -14,12 +14,12 @@ class AdminCategoryProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Category _mapCategory(api_models.Category apiCategory) {
+  Category _mapCategory(dynamic apiCategory) {
     return Category(
-      id: apiCategory.id,
-      name: apiCategory.name,
-      description: apiCategory.description,
-      isActive: true, // Assuming default, as it's not in the api model
+      id: apiCategory?.id as int?,
+      name: apiCategory?.name as String?,
+      description: apiCategory?.description as String?,
+      isActive: apiCategory?.isActive as bool? ?? true,
     );
   }
 
