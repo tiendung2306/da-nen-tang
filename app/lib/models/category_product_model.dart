@@ -54,12 +54,11 @@ class Category {
 class Product {
   final int? id;
   final String? name;
+  final String? defaultUnit;
+  final int? avgShelfLife;
   final String? description;
   final String? imageUrl;
-  final double? price;
-  final int? quantity;
   final int? categoryId;
-  final String? categoryName;
   final bool? isActive;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -67,27 +66,34 @@ class Product {
   Product({
     this.id,
     this.name,
+    this.defaultUnit,
+    this.avgShelfLife,
     this.description,
     this.imageUrl,
-    this.price,
-    this.quantity,
     this.categoryId,
-    this.categoryName,
     this.isActive,
     this.createdAt,
     this.updatedAt,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
+    // Extract categoryId from categories array if present
+    int? extractedCategoryId = json['categoryId'] as int?;
+    if (extractedCategoryId == null && json['categories'] is List) {
+      final categories = json['categories'] as List;
+      if (categories.isNotEmpty && categories.first is Map) {
+        extractedCategoryId = (categories.first as Map)['id'] as int?;
+      }
+    }
+
     return Product(
       id: json['id'] as int?,
       name: json['name'] as String?,
+      defaultUnit: json['defaultUnit'] as String?,
+      avgShelfLife: json['avgShelfLife'] as int?,
       description: json['description'] as String?,
       imageUrl: json['imageUrl'] as String?,
-      price: (json['price'] as num?)?.toDouble(),
-      quantity: json['quantity'] as int?,
-      categoryId: json['categoryId'] as int?,
-      categoryName: json['categoryName'] as String?,
+      categoryId: extractedCategoryId,
       isActive: json['isActive'] as bool?,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'] as String)
@@ -102,12 +108,11 @@ class Product {
     return {
       'id': id,
       'name': name,
+      'defaultUnit': defaultUnit,
+      'avgShelfLife': avgShelfLife,
       'description': description,
       'imageUrl': imageUrl,
-      'price': price,
-      'quantity': quantity,
       'categoryId': categoryId,
-      'categoryName': categoryName,
       'isActive': isActive,
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
@@ -115,5 +120,6 @@ class Product {
   }
 
   @override
-  String toString() => 'Product(id: $id, name: $name, price: $price)';
+  String toString() =>
+      'Product(id: $id, name: $name, defaultUnit: $defaultUnit)';
 }

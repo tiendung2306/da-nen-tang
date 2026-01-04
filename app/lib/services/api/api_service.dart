@@ -9,6 +9,8 @@ import 'package:flutter_boilerplate/models/fridge_item.dart';
 import 'package:flutter_boilerplate/models/fridge_statistics.dart';
 import 'package:flutter_boilerplate/models/meal_plan_model.dart';
 import 'package:flutter_boilerplate/models/notification_model.dart';
+import 'package:flutter_boilerplate/models/category_product_model.dart'
+    as admin_models;
 import 'package:flutter_boilerplate/models/product_model.dart';
 import 'package:flutter_boilerplate/models/recipe_model.dart';
 import 'package:flutter_boilerplate/models/shopping_list_model.dart';
@@ -952,33 +954,148 @@ class ApiService {
     }
   }
 
-  /// POST /api/v1/admin/master-products - Create a new product
-  Future<Product> createProduct(Map<String, dynamic> data) async {
+  /// POST /api/v1/master-products - Create a new product
+  /// Parameters should be passed as query parameters
+  /// Optional image file can be included in multipart/form-data
+  Future<admin_models.Product> createProduct(Map<String, dynamic> data,
+      {XFile? image}) async {
     try {
-      final response = await _dio.post('/admin/master-products', data: data);
-      return Product.fromJson(
-          response.data['data'] ?? response.data as Map<String, dynamic>);
+      // Build query parameters from the data
+      final queryParams = <String, dynamic>{};
+
+      if (data['name'] != null) queryParams['name'] = data['name'];
+      if (data['defaultUnit'] != null)
+        queryParams['defaultUnit'] = data['defaultUnit'];
+      if (data['avgShelfLife'] != null)
+        queryParams['avgShelfLife'] = data['avgShelfLife'];
+      if (data['description'] != null)
+        queryParams['description'] = data['description'];
+      if (data['categoryId'] != null)
+        queryParams['categoryIds'] = data['categoryId'];
+
+      print('[API] Creating product with query params: $queryParams');
+      print('[API] Endpoint: ${ApiConfig.products}');
+
+      // If image is provided, use multipart/form-data
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final formData = FormData.fromMap({
+          'file': MultipartFile.fromBytes(bytes, filename: image.name),
+        });
+
+        final response = await _dio.post(
+          ApiConfig.products,
+          queryParameters: queryParams,
+          data: formData,
+          options: Options(contentType: 'multipart/form-data'),
+        );
+        print(
+            '[API] Create product response: ${response.statusCode} - ${response.data}');
+
+        final productData = response.data['data'] as Map<String, dynamic>;
+        print('[API] Product data: $productData');
+
+        return admin_models.Product.fromJson(productData);
+      } else {
+        // Without image, send as query parameters only
+        final response = await _dio.post(
+          ApiConfig.products,
+          queryParameters: queryParams,
+        );
+        print(
+            '[API] Create product response: ${response.statusCode} - ${response.data}');
+
+        final productData = response.data['data'] as Map<String, dynamic>;
+        print('[API] Product data: $productData');
+
+        return admin_models.Product.fromJson(productData);
+      }
     } on DioException catch (e) {
+      print('[API ERROR] Create product failed: ${e.message}');
+      print('[API ERROR] Status code: ${e.response?.statusCode}');
+      print('[API ERROR] Request data: $data');
+      print('[API ERROR] Response: ${e.response?.data}');
       throw _handleDioError(e);
+    } catch (e) {
+      print('[API ERROR] Unexpected error in createProduct: $e');
+      throw Exception('Failed to create product: $e');
     }
   }
 
-  /// PUT /api/v1/admin/master-products/{id} - Update a product
-  Future<Product> updateProduct(int id, Map<String, dynamic> data) async {
+  /// PUT /api/v1/master-products/{id} - Update a product
+  /// Parameters should be passed as query parameters
+  /// Optional image file can be included in multipart/form-data
+  Future<admin_models.Product> updateProduct(int id, Map<String, dynamic> data,
+      {XFile? image}) async {
     try {
-      final response = await _dio.put('/admin/master-products/$id', data: data);
-      return Product.fromJson(
-          response.data['data'] ?? response.data as Map<String, dynamic>);
+      // Build query parameters from the data
+      final queryParams = <String, dynamic>{};
+
+      if (data['name'] != null) queryParams['name'] = data['name'];
+      if (data['defaultUnit'] != null)
+        queryParams['defaultUnit'] = data['defaultUnit'];
+      if (data['avgShelfLife'] != null)
+        queryParams['avgShelfLife'] = data['avgShelfLife'];
+      if (data['description'] != null)
+        queryParams['description'] = data['description'];
+      if (data['categoryId'] != null)
+        queryParams['categoryIds'] = data['categoryId'];
+
+      print('[API] Updating product $id with query params: $queryParams');
+
+      // If image is provided, use multipart/form-data
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        final formData = FormData.fromMap({
+          'file': MultipartFile.fromBytes(bytes, filename: image.name),
+        });
+
+        final response = await _dio.put(
+          ApiConfig.productById(id),
+          queryParameters: queryParams,
+          data: formData,
+          options: Options(contentType: 'multipart/form-data'),
+        );
+        print(
+            '[API] Update product response: ${response.statusCode} - ${response.data}');
+
+        final productData = response.data['data'] as Map<String, dynamic>;
+        print('[API] Product data: $productData');
+
+        return admin_models.Product.fromJson(productData);
+      } else {
+        // Without image, send as query parameters only
+        final response = await _dio.put(
+          ApiConfig.productById(id),
+          queryParameters: queryParams,
+        );
+        print(
+            '[API] Update product response: ${response.statusCode} - ${response.data}');
+
+        final productData = response.data['data'] as Map<String, dynamic>;
+        print('[API] Product data: $productData');
+
+        return admin_models.Product.fromJson(productData);
+      }
     } on DioException catch (e) {
+      print('[API ERROR] Update product failed: ${e.message}');
+      print('[API ERROR] Response: ${e.response?.data}');
       throw _handleDioError(e);
+    } catch (e) {
+      print('[API ERROR] Unexpected error in updateProduct: $e');
+      throw Exception('Failed to update product: $e');
     }
   }
 
-  /// DELETE /api/v1/admin/master-products/{id} - Delete a product
+  /// DELETE /api/v1/master-products/{id} - Delete a product
   Future<void> deleteProduct(int id) async {
     try {
-      await _dio.delete('/admin/master-products/$id');
+      print('[API] Deleting product $id');
+      await _dio.delete(ApiConfig.productById(id));
+      print('[API] Delete product $id successful');
     } on DioException catch (e) {
+      print('[API ERROR] Delete product failed: ${e.message}');
+      print('[API ERROR] Response: ${e.response?.data}');
       throw _handleDioError(e);
     }
   }
@@ -1112,14 +1229,15 @@ class ApiService {
   // --- Admin: Category Management ---
 
   /// GET /api/v1/categories - Lấy tất cả danh mục
-  Future<List<Category>> getCategories() async {
+  Future<List<admin_models.Category>> getCategories() async {
     try {
       final response = await _dio.get('/categories');
       final data = response.data['data'] ?? response.data;
 
       if (data is List) {
         return data
-            .map((c) => Category.fromJson(c as Map<String, dynamic>))
+            .map((c) =>
+                admin_models.Category.fromJson(c as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -1129,10 +1247,10 @@ class ApiService {
   }
 
   /// GET /api/v1/categories/{id} - Lấy danh mục theo ID
-  Future<Category> getCategoryById(int id) async {
+  Future<admin_models.Category> getCategoryById(int id) async {
     try {
       final response = await _dio.get('/categories/$id');
-      return Category.fromJson(
+      return admin_models.Category.fromJson(
           response.data['data'] ?? response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -1140,7 +1258,7 @@ class ApiService {
   }
 
   /// GET /api/v1/categories/search?name= - Tìm kiếm danh mục
-  Future<List<Category>> searchCategories(String name) async {
+  Future<List<admin_models.Category>> searchCategories(String name) async {
     try {
       final response =
           await _dio.get('/categories/search', queryParameters: {'name': name});
@@ -1148,7 +1266,8 @@ class ApiService {
 
       if (data is List) {
         return data
-            .map((c) => Category.fromJson(c as Map<String, dynamic>))
+            .map((c) =>
+                admin_models.Category.fromJson(c as Map<String, dynamic>))
             .toList();
       }
       return [];
@@ -1158,10 +1277,11 @@ class ApiService {
   }
 
   /// POST /api/v1/categories - Tạo danh mục mới
-  Future<Category> createCategory(Map<String, dynamic> data) async {
+  Future<admin_models.Category> createCategory(
+      Map<String, dynamic> data) async {
     try {
       final response = await _dio.post('/categories', data: data);
-      return Category.fromJson(
+      return admin_models.Category.fromJson(
           response.data['data'] ?? response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
@@ -1169,10 +1289,11 @@ class ApiService {
   }
 
   /// PUT /api/v1/categories/{id} - Cập nhật danh mục
-  Future<Category> updateCategory(int id, Map<String, dynamic> data) async {
+  Future<admin_models.Category> updateCategory(
+      int id, Map<String, dynamic> data) async {
     try {
       final response = await _dio.put('/categories/$id', data: data);
-      return Category.fromJson(
+      return admin_models.Category.fromJson(
           response.data['data'] ?? response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw _handleDioError(e);
