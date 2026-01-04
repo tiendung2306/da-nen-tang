@@ -8,15 +8,28 @@ import io.swagger.v3.oas.models.info.License
 import io.swagger.v3.oas.models.security.SecurityRequirement
 import io.swagger.v3.oas.models.security.SecurityScheme
 import io.swagger.v3.oas.models.servers.Server
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class OpenApiConfig {
+class OpenApiConfig(
+    @Value("\${app.base-url:http://localhost:8080}") private val baseUrl: String
+) {
 
     @Bean
     fun customOpenAPI(): OpenAPI {
         val securitySchemeName = "bearerAuth"
+        
+        val servers = mutableListOf<Server>()
+        
+        // Add the configured server URL first (will be default in Swagger UI)
+        servers.add(Server().url(baseUrl).description("Current Server"))
+        
+        // Add localhost for development if not already the base URL
+        if (!baseUrl.contains("localhost")) {
+            servers.add(Server().url("http://localhost:8080").description("Development Server"))
+        }
         
         return OpenAPI()
             .info(
@@ -35,12 +48,7 @@ class OpenApiConfig {
                             .url("https://opensource.org/licenses/MIT")
                     )
             )
-            .servers(
-                listOf(
-                    Server().url("http://localhost:8080").description("Development Server"),
-                    Server().url("https://api.smartgrocery.com").description("Production Server")
-                )
-            )
+            .servers(servers)
             .addSecurityItem(SecurityRequirement().addList(securitySchemeName))
             .components(
                 Components()

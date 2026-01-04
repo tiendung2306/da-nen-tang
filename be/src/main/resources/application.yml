@@ -58,6 +58,10 @@ server:
   servlet:
     context-path: /
 
+# Application URL (for Swagger and other configurations)
+app:
+  base-url: ${APP_BASE_URL:http://localhost:8080}
+
 # Cloudinary Configuration
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:}

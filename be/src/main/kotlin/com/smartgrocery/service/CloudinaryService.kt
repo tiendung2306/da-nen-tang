@@ -71,11 +71,7 @@ class CloudinaryService(
                     "folder", folder,
                     "public_id", publicId,
                     "resource_type", "image",
-                    "overwrite", true,
-                    "transformation", ObjectUtils.asMap(
-                        "quality", "auto",
-                        "fetch_format", "auto"
-                    )
+                    "overwrite", true
                 )
             )
 
