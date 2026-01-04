@@ -147,8 +147,6 @@ CREATE TABLE fridge_items (
     status VARCHAR(20) NOT NULL DEFAULT 'FRESH',
     note VARCHAR(255),
     added_by BIGINT NOT NULL REFERENCES users(id),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_fridge_items_family_id ON fridge_items(family_id);
